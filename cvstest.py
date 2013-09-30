@@ -2,7 +2,7 @@ import csv
 import sys
 import time
 
-contestants = 8 # change to listcontestants
+contestants = ['bill','ben','bob','cat','hat','matt','mouse','man'] # change to listcontestants
 questions = []
 money = [0, 50,100,200,300,400,500,1000,2500,5000]
 mainQ = 'questions.csv'
@@ -18,7 +18,7 @@ def importQuestions(file):
                 questions.append([row[0], row[1]])
     # with statement automatically closes the csv file cleanly even in event of unexpected script termination
 
-def askQuestion():
+def askQuestions():
     global money, questions, contestants, mainQ
     importQuestions(mainQ)
     cntQuestions = 0
@@ -26,14 +26,14 @@ def askQuestion():
     cntRounds = 1
     cntRquestions = 1
     bank = 0
-    while cntQuestions < len(questions['main']):
+    cntContestants = len(contestants) + 1
+    while cntQuestions < len(questions):
         if cntRquestions == 1:
             print('Round ' + str(cntRounds) + ' starting')
         print('Round ' + str(cntRounds) + ' Question ' + str(cntRquestions))
         print(questions[cntQuestions][0])
         while True:
             event = getEvent()
-            print(event)
             if event == '1':
                 print('Correct')
                 correct += 1
@@ -63,7 +63,14 @@ def askQuestion():
             cntRounds += 1
             cntRquestions = 1
             correct = 0
-        if contestants -  cntRounds == 2:
+        if cntRquestions == 1:
+            print('You must now choose the Weakest Link')
+            i = 1
+            while i - 1 < len(contestants):
+                print(str(i) + '\t' + contestants[i-1])
+                i += 1
+            contestants.remove(contestants[int(input('Please enter a selection (1 - ' + str(len(contestants)) + ')\n')) - 1])
+        if cntRounds - cntContestants == -2:
             final()
     print('So this is Embarasing')
     print('We seam to have run out of questions')
@@ -73,11 +80,23 @@ def askQuestion():
 def final():
     global finalQ, questions, contestants
     cntQuestions = 0
+    correct = []
+    for i in contestants:
+        correct.append([str(i),0])
+    print(correct)
     print('Congratulations - You are through to the final')
-    print('x and y will now go head to head')
+    print(contestants[0] + ' and ' + contestants[1] + ' will now go head to head')
     importQuestions(finalQ)
-    while cntQuestions < len(questions['main']):
-        # ask questions
+    while cntQuestions < len(questions):
+        for c in contestants:
+            print(c + ': ' + questions[cntQuestions][0])
+            event = getEvent()
+            if event == '1':
+                print('Correct')
+                correct[correct.index([c])][1] += 1 # fix this
+            elif event == '2':
+                print('Incorrect - ' + questions[cntQuestions][1])
+        cntQuestions += 1
     print('So this is Embarasing')
     print('We seam to have run out of questions')
     print('Exiting...')
@@ -86,4 +105,4 @@ def final():
 def getEvent():
     return input()
 
-askQuestion()
+askQuestions()
