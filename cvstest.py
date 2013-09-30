@@ -72,35 +72,54 @@ def askQuestions():
             contestants.remove(contestants[int(input('Please enter a selection (1 - ' + str(len(contestants)) + ')\n')) - 1])
         if cntRounds - cntContestants == -2:
             final()
-    print('So this is Embarasing')
-    print('We seam to have run out of questions')
-    print('Exiting...')
-    sys.exit()
+            break
+    else:
+        print('So this is Embarasing')
+        print('We seam to have run out of questions')
+        print('Exiting...')
+        sys.exit()
 
 def final():
     global finalQ, questions, contestants
-    cntQuestions = 0
+    cntQuestions = maxScr = 0
     correct = []
     for i in contestants:
         correct.append([str(i),0])
-    print(correct)
     print('Congratulations - You are through to the final')
     print(contestants[0] + ' and ' + contestants[1] + ' will now go head to head')
     importQuestions(finalQ)
-    while cntQuestions < len(questions):
+    if len(questions) < 10:
+        print('So this is Embarasing')
+        print('We seam to have run out of questions')
+        print('Exiting...')
+        sys.exit()
+    while cntQuestions < 10:
         for c in contestants:
             print(c + ': ' + questions[cntQuestions][0])
             event = getEvent()
             if event == '1':
                 print('Correct')
-                correct[correct.index([c])][1] += 1 # fix this
+                for i in correct:
+                    if i[0] == c:
+                        i[1] += 1
             elif event == '2':
                 print('Incorrect - ' + questions[cntQuestions][1])
-        cntQuestions += 1
-    print('So this is Embarasing')
-    print('We seam to have run out of questions')
-    print('Exiting...')
-    sys.exit()
+            cntQuestions += 1
+    for i in correct:
+        if maxScr < i[1]:
+            maxScr = i[1]
+        print(str(i[0]) + ' : ' + str(i[1]))
+    i = 0
+    while i < len(contestants):
+        if maxScr != correct[i][1]:
+            contestants.remove(correct[i][0])
+        i += 1
+    if len(contestants) == 1:
+        print('The winner is')
+    else:
+        print('The winners are')
+    for i in contestants:
+        print(i)
 
 def getEvent():
     return input()
