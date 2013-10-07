@@ -59,14 +59,6 @@ class connectListner (threading.Thread):
 	def join(self):
 			self.end = True
 
-# msg = clientsocket.receive(4096)
-# check = clientsocket.receive(40).decode()
-# if hashlib.sha1(msg).hexdigest() == check:
-	# status.append('Succesfully received message from ' + address)
-# else:
-	# status.append('message from ' + address + ' did not transmit properly')
-# status_update()
-
 def start():
 	disconnect()
 	startFrame.grid_forget()
