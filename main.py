@@ -18,6 +18,7 @@ cntQuestions = 0
 correct = 0
 cntRounds = 1
 cntRquestions = 1
+bank = 0
 questions = []
 status = []
 questions = []
@@ -107,7 +108,7 @@ ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
 ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2, sticky=N)
 
 def askQuestion():
-    global money, questions, contestants, mainQ, cntQuestions, correct, cntRounds, cntRquestions, bank
+    global money, questions, contestants, mainQ, cntQuestions, correct, cntRounds, cntRquestions
     importQuestions(mainQ)
     cntContestants = len(contestants) + 1
     if cntQuestions < len(questions):
@@ -123,36 +124,34 @@ def askQuestion():
         status.append('So this is Embarasing')
         status.append('We seam to have run out of questions')
         status.append('Exiting...')
+        status_update()
         sys.exit()
 
 def questionHandler(event):
-    global money, questions, contestants, mainQ, cntQuestions, correct, cntRounds, cntRquestions, bank
+    global money, questions, contestants, cntQuestions, correct, cntRounds, cntRquestions, bank
     if event == 1:
         status.append('Correct')
         correct += 1
     elif event == 2:
         status.append('Incorrect - ' + questions[cntQuestions][1])
         correct = 0
-    #elif event == 3:
-    #    status.set('Banked £' + str(money[correct]))
-    #    print('£' + str(bank.get()) + ' now in bank')
-    #    bank.set(bank.get() + money[correct])
-    #    correct = 0
-    #    print('You now have £0')
-    #    cur_money.set(money[correct])
-    #    mainframe.update()
-    #    cntQuestions =- 1
-    #    return
+    elif event == 3:
+        status.append('Banked £' + str(money[correct]))
+        status.append('£' + str(bank) + ' now in bank')
+        bank += money[correct]
+        correct = 0
+        status.append('You now have £' + money[correct])
+        #cntQuestions =- 1 double check if this is needed?
+        return
     elif event == 4:
         status.append('Time Up')
-    #    print('You have £' + str(bank.get()) + ' in the bank')
+        status.append('You have £' + str(bank) + ' in the bank')
         cntRounds += 1
         correct = cntRquestions = 0
     event = ''
     cntRquestions += 1
     cntQuestions += 1
     status.append('You now have £' + str(money[correct]))
-    #cur_money.set(money[correct])
     if correct == len(money) - 1:
         status.append('You have got all questions in round ' + str(cntRounds) + ' correct')
         cntRounds += 1
