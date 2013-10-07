@@ -7,19 +7,28 @@ import threading
 import time
 import select
 import sys
+import json
 
 window_title = 'The Weakest Link'
 status_lines = 10
 mainQ = 'questions.csv'
 finalQ = 'questions.csv'
-variables = [['cntQuestions', 'correct', 'cntRounds', 'cntRquestions', 'bank', 'question','contestants', 'money'],[0,0,1,1,0,'',['bill','ben','bob','cat','hat','matt','mouse','man'],[0, 50,100,200,300,400,500,1000,2500,5000]]]
+variables = {}
+variables['cntQuestions'] = 0
+variables['correct'] = 0
+variables['cntRounds'] = 1
+variables['cntRquestions'] = 1
+variables['bank'] = 0
+variables['question'] = ''
+variables['contestants'] = ['bill','ben','bob','cat','hat','matt','mouse','man']
+variables['money'] = [0, 50,100,200,300,400,500,1000,2500,5000]
 questions = []
 status = []
 questions = []
 peripherals = []
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serversocket.bind((socket.gethostname(), 1024))
+serversocket.bind(('localhost', 1024))
 serversocket.listen(5)
 serversocket.setblocking(False)
 
@@ -42,7 +51,7 @@ class connectListner (threading.Thread):
 			readable, writable, err = select.select([serversocket.fileno()], [], [], 1)
 			if readable:
 					clientsocket, address = serversocket.accept()
-					status.append(address + ' Succesfully Connected')
+					status.append(address[0] + ' Succesfully Connected')
 					status_update()
 					peripherals.append(clientsocket)
 			if self.end == True:
@@ -53,9 +62,9 @@ class connectListner (threading.Thread):
 # msg = clientsocket.receive(4096)
 # check = clientsocket.receive(40).decode()
 # if hashlib.sha1(msg).hexdigest() == check:
-				# status.append('Succesfully received message from ' + address)
+	# status.append('Succesfully received message from ' + address)
 # else:
-				# status.append('message from ' + address + ' did not transmit properly')
+	# status.append('message from ' + address + ' did not transmit properly')
 # status_update()
 
 def start():
@@ -63,13 +72,14 @@ def start():
 	startFrame.grid_forget()
 	mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
 	askQuestion()
+	updateClient()
 
 def connect():
-	global listner
-	listner = connectListner()
-	listner.start()
-	status.append('Started Listner')
-	status_update()
+        global listner
+        listner = connectListner()
+        listner.start()
+        status.append('Started Listner')
+        status_update()
         
 def disconnect():
 	global listner
@@ -105,15 +115,14 @@ def askQuestion():
     global questions, mainQ, variables 
     importQuestions(mainQ)
     #cntContestants = len(variables[1][variables[0].index('contestants')]) + 1
-    if variables[1][variables[0].index('cntQuestions')] < len(variables[1][variables[0].index('questions')]):
-        if variables[1][variables[0].index('cntRquestions')] == 1:
-            status.append('Round ' + str(variables[1][variables[0].index('cntRounds')]) + ' starting')
-            status_update()
-            time.sleep(1)
-            status.append('You know have £' + variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]])
-        status.append('Round ' + str(variables[1][variables[0].index('cntRounds')]) + ' Question ' + str(variables[1][variables[0].index('cntRquestions')]))
-        status.append(questions[variables[1][variables[0].index('cntQuestions')]][0])
-	variables[1][variables[0].index('question')] = questions[variables[1][variables[0].index('cntQuestions')]][0]
+    if variables['cntQuestions'] < len('questions'):
+        if variables['cntRquestions'] == 1:
+                status.append('Round ' + str(variables['cntRounds']) + ' starting')
+                status_update()
+                time.sleep(1)
+        status.append('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
+        status.append(questions[variables['cntQuestions']][0])
+        variables['question'] = questions[variables['cntQuestions']][0]
         status_update()
     else:
         status.append('So this is Embarasing')
@@ -128,30 +137,30 @@ def questionHandler(event):
         status.append('Correct')
         correct += 1
     elif event == 2:
-        status.append('Incorrect - ' + questions[variables[1][variables[0].index('cntQuestions')]][1])
+        status.append('Incorrect - ' + questions[variables['cntQuestions']][1])
         correct = 0
     elif event == 3:
-		variables[1][variables[0].index('bank')] += variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]]
-        status.append('Banked £' + str(variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]]))
-        status.append('£' + str(variables[1][variables[0].index('bank')]) + ' now in bank')
-        variables[1][variables[0].index('correct')] = 0
-        status.append('You now have £' + variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]])
+        variables['bank'] += variables['money'][variables['correct']]
+        status.append('Banked £' + str(variables['money'][variables['correct']]))
+        status.append('£' + str(variables['bank']) + ' now in bank')
+        variables['correct'] = 0
+        status.append('You now have £' + variables['money'][variables['correct']])
         #variables[1][variables[0].index('cntQuestions')] =- 1 double check if this is needed?
         return
     elif event == 4:
         status.append('Time Up')
-        status.append('You have £' + str(variables[1][variables[0].index('bank')]) + ' in the bank')
-        variables[1][variables[0].index('cntRounds')] += 1
-        variables[1][variables[0].index('correct')] = variables[1][variables[0].index('cntRquestions')] = 0
+        status.append('You have £' + str(variables['bank']) + ' in the bank')
+        variables['cntRounds'] += 1
+        variables['correct'] = variables['cntRquestions'] = 0
     event = ''
-    variables[1][variables[0].index('cntRquestions')] += 1
-    variables[1][variables[0].index('cntQuestions')] += 1
-    status.append('You now have £' + str(variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]]))
+    variables['cntRquestions'] += 1
+    variables['cntQuestions'] += 1
+    status.append('You now have £' + str(variables['money'][variables['correct']]))
     if correct == len(money) - 1:
-        status.append('You have got all questions in round ' + str(variables[1][variables[0].index('cntRounds')]) + ' correct')
-        variables[1][variables[0].index('cntRounds')] += 1
-        variables[1][variables[0].index('cntRquestions')] = 1
-        variables[1][variables[0].index('correct')] = 0
+        status.append('You have got all questions in round ' + str(variables['cntRounds']) + ' correct')
+        variables['cntRounds'] += 1
+        variables['cntRquestions'] = 1
+        variables['correct'] = 0
     status_update()
 ##    if cntRquestions == 1:
 ##        print('You must now choose the Weakest Link')
@@ -170,5 +179,15 @@ def importQuestions(file):
             if row[0] and row[1]:
                 questions.append([row[0], row[1]])
     # with statement automatically closes the csv file cleanly even in event of unexpected script termination
+
+def updateClient():
+	global variables
+	jsonVariables = json.dumps(variables)
+	assert(variables == json.loads(jsonVariables))
+	jsonBytes = jsonVariables.encode('UTF-8')
+	check = hashlib.sha1(jsonBytes).hexdigest().encode('UTF-8')
+	for clientsocket in peripherals:
+		bytesSent = clientsocket.send(jsonBytes)
+		bytesSent = clientsocket.send(check)
 
 root.mainloop()
