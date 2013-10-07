@@ -104,7 +104,7 @@ ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2,
 def askQuestion():
     global questions, mainQ, variables 
     importQuestions(mainQ)
-    variables[1][variables[0].index('cntContestants')] = len(variables[1][variables[0].index('contestants')]) + 1
+    #cntContestants = len(variables[1][variables[0].index('contestants')]) + 1
     if variables[1][variables[0].index('cntQuestions')] < len(variables[1][variables[0].index('questions')]):
         if variables[1][variables[0].index('cntRquestions')] == 1:
             status.append('Round ' + str(variables[1][variables[0].index('cntRounds')]) + ' starting')
@@ -113,7 +113,7 @@ def askQuestion():
             status.append('You know have £' + variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]])
         status.append('Round ' + str(variables[1][variables[0].index('cntRounds')]) + ' Question ' + str(variables[1][variables[0].index('cntRquestions')]))
         status.append(questions[variables[1][variables[0].index('cntQuestions')]][0])
-		variables[1][variables[0].index('question')] = questions[variables[1][variables[0].index('cntQuestions')]][0]
+	variables[1][variables[0].index('question')] = questions[variables[1][variables[0].index('cntQuestions')]][0]
         status_update()
     else:
         status.append('So this is Embarasing')
