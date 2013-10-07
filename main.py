@@ -10,15 +10,9 @@ import sys
 
 window_title = 'The Weakest Link'
 status_lines = 10
-contestants = ['bill','ben','bob','cat','hat','matt','mouse','man'] # change to listcontestants
-money = [0, 50,100,200,300,400,500,1000,2500,5000]
 mainQ = 'questions.csv'
 finalQ = 'questions.csv'
-cntQuestions = 0
-correct = 0
-cntRounds = 1
-cntRquestions = 1
-bank = 0
+variables = [['cntQuestions', 'correct', 'cntRounds', 'cntRquestions', 'bank', 'question','contestants', 'money'],[0,0,1,1,0,'',['bill','ben','bob','cat','hat','matt','mouse','man'],[0, 50,100,200,300,400,500,1000,2500,5000]]]
 questions = []
 status = []
 questions = []
@@ -108,17 +102,18 @@ ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
 ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2, sticky=N)
 
 def askQuestion():
-    global money, questions, contestants, mainQ, cntQuestions, correct, cntRounds, cntRquestions
+    global questions, mainQ, variables 
     importQuestions(mainQ)
-    cntContestants = len(contestants) + 1
-    if cntQuestions < len(questions):
-        if cntRquestions == 1:
-            status.append('Round ' + str(cntRounds) + ' starting')
+    variables[1][variables[0].index('cntContestants')] = len(variables[1][variables[0].index('contestants')]) + 1
+    if variables[1][variables[0].index('cntQuestions')] < len(variables[1][variables[0].index('questions')]):
+        if variables[1][variables[0].index('cntRquestions')] == 1:
+            status.append('Round ' + str(variables[1][variables[0].index('cntRounds')]) + ' starting')
             status_update()
             time.sleep(1)
-            status.append('You know have £' + money[correct])
-        status.append('Round ' + str(cntRounds) + ' Question ' + str(cntRquestions))
-        status.append(questions[cntQuestions][0])
+            status.append('You know have £' + variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]])
+        status.append('Round ' + str(variables[1][variables[0].index('cntRounds')]) + ' Question ' + str(variables[1][variables[0].index('cntRquestions')]))
+        status.append(questions[variables[1][variables[0].index('cntQuestions')]][0])
+		variables[1][variables[0].index('question')] = questions[variables[1][variables[0].index('cntQuestions')]][0]
         status_update()
     else:
         status.append('So this is Embarasing')
@@ -128,35 +123,35 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event):
-    global money, questions, contestants, cntQuestions, correct, cntRounds, cntRquestions, bank
+    global questions, variables
     if event == 1:
         status.append('Correct')
         correct += 1
     elif event == 2:
-        status.append('Incorrect - ' + questions[cntQuestions][1])
+        status.append('Incorrect - ' + questions[variables[1][variables[0].index('cntQuestions')]][1])
         correct = 0
     elif event == 3:
-        status.append('Banked £' + str(money[correct]))
-        status.append('£' + str(bank) + ' now in bank')
-        bank += money[correct]
-        correct = 0
-        status.append('You now have £' + money[correct])
-        #cntQuestions =- 1 double check if this is needed?
+		variables[1][variables[0].index('bank')] += variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]]
+        status.append('Banked £' + str(variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]]))
+        status.append('£' + str(variables[1][variables[0].index('bank')]) + ' now in bank')
+        variables[1][variables[0].index('correct')] = 0
+        status.append('You now have £' + variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]])
+        #variables[1][variables[0].index('cntQuestions')] =- 1 double check if this is needed?
         return
     elif event == 4:
         status.append('Time Up')
-        status.append('You have £' + str(bank) + ' in the bank')
-        cntRounds += 1
-        correct = cntRquestions = 0
+        status.append('You have £' + str(variables[1][variables[0].index('bank')]) + ' in the bank')
+        variables[1][variables[0].index('cntRounds')] += 1
+        variables[1][variables[0].index('correct')] = variables[1][variables[0].index('cntRquestions')] = 0
     event = ''
-    cntRquestions += 1
-    cntQuestions += 1
-    status.append('You now have £' + str(money[correct]))
+    variables[1][variables[0].index('cntRquestions')] += 1
+    variables[1][variables[0].index('cntQuestions')] += 1
+    status.append('You now have £' + str(variables[1][variables[0].index('money')][variables[1][variables[0].index('correct')]]))
     if correct == len(money) - 1:
-        status.append('You have got all questions in round ' + str(cntRounds) + ' correct')
-        cntRounds += 1
-        cntRquestions = 1
-        correct = 0
+        status.append('You have got all questions in round ' + str(variables[1][variables[0].index('cntRounds')]) + ' correct')
+        variables[1][variables[0].index('cntRounds')] += 1
+        variables[1][variables[0].index('cntRquestions')] = 1
+        variables[1][variables[0].index('correct')] = 0
     status_update()
 ##    if cntRquestions == 1:
 ##        print('You must now choose the Weakest Link')
