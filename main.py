@@ -6,6 +6,7 @@ import hashlib
 import threading
 import time
 import select
+import sys
 
 window_title = 'The Weakest Link'
 status_lines = 10
@@ -111,56 +112,53 @@ def askQuestion():
     cntContestants = len(contestants) + 1
     if cntQuestions < len(questions):
         if cntRquestions == 1:
-            state.set('Round ' + str(cntRounds) + ' starting')
-            print(state.get())
-            question.set('')
-            mainframe.update()
+            status.append('Round ' + str(cntRounds) + ' starting')
+            status_update()
             time.sleep(1)
-            cur_money.set(money[correct])
-        state.set('Round ' + str(cntRounds) + ' Question ' + str(cntRquestions))
-        print(state.get())
-        question.set(questions[cntQuestions][0])
-        print(question.get())
+            status.append('You know have £' + money[correct])
+        status.append('Round ' + str(cntRounds) + ' Question ' + str(cntRquestions))
+        status.append(questions[cntQuestions][0])
+        status_update()
     else:
-        print('So this is Embarasing')
-        print('We seam to have run out of questions')
-        print('Exiting...')
+        status.append('So this is Embarasing')
+        status.append('We seam to have run out of questions')
+        status.append('Exiting...')
         sys.exit()
 
 def questionHandler(event):
     global money, questions, contestants, mainQ, cntQuestions, correct, cntRounds, cntRquestions, bank
     if event == 1:
-        print('Correct')
-        state.set('Correct')
+        status.append('Correct')
         correct += 1
     elif event == 2:
-        print('Incorrect - ' + questions[cntQuestions][1])
+        status.append('Incorrect - ' + questions[cntQuestions][1])
         correct = 0
-    elif event == 3:
-        print('Banked £' + str(money[correct]))
-        print('£' + str(bank.get()) + ' now in bank')
-        bank.set(bank.get() + money[correct])
-        correct = 0
-        print('You now have £0')
-        cur_money.set(money[correct])
-        mainframe.update()
-        cntQuestions =- 1
-        return
+    #elif event == 3:
+    #    status.set('Banked £' + str(money[correct]))
+    #    print('£' + str(bank.get()) + ' now in bank')
+    #    bank.set(bank.get() + money[correct])
+    #    correct = 0
+    #    print('You now have £0')
+    #    cur_money.set(money[correct])
+    #    mainframe.update()
+    #    cntQuestions =- 1
+    #    return
     elif event == 4:
-        print('Time Up')
-        print('You have £' + str(bank.get()) + ' in the bank')
+        status.append('Time Up')
+    #    print('You have £' + str(bank.get()) + ' in the bank')
         cntRounds += 1
         correct = cntRquestions = 0
     event = ''
     cntRquestions += 1
     cntQuestions += 1
-    print('You now have £' + str(money[correct]))
-    cur_money.set(money[correct])
+    status.append('You now have £' + str(money[correct]))
+    #cur_money.set(money[correct])
     if correct == len(money) - 1:
-        print('You have got all questions in round ' + str(cntRounds) + ' correct')
+        status.append('You have got all questions in round ' + str(cntRounds) + ' correct')
         cntRounds += 1
         cntRquestions = 1
         correct = 0
+    status_update()
 ##    if cntRquestions == 1:
 ##        print('You must now choose the Weakest Link')
 ##        i = 1
