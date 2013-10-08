@@ -72,8 +72,8 @@ class receiveCommand (threading.Thread):
 			readable, writable, err = select.select([self.clientsocket.fileno()], [], [], 1)
 			if readable:
 				msg = self.clientsocket.recv(4096)
-				check = self.clientsocket.recv(40).decode('UTF-8')
-				assert(hashlib.sha1(msg).hexdigest() == check)
+				#check = self.clientsocket.recv(40).decode('UTF-8')
+				#assert(hashlib.sha1(msg).hexdigest() == check)
 				msg = json.loads(msg.decode('UTF-8'))
 				questionHandler(msg)
 			if self.end == True:
@@ -82,15 +82,18 @@ class receiveCommand (threading.Thread):
 			self.end = True
 
 def start():
-	global peripheralThreads
+	global peripherals, peripheralThreads
 	disconnect()
 	startFrame.grid_forget()
 	mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+	for i in peripherals:
+		peripheralThreads.append(receiveCommand(i))
+	questionControl()
+
+def questionControl():
 	askQuestion()
 	updateClient()
 	i = 0
-	for i in peripherals:
-		peripheralThreads.append(receiveCommand(i))
 	for i in peripheralThreads:
 		i.start()
 
@@ -155,10 +158,10 @@ def questionHandler(event):
     global questions, variables, peripheralThreads
     if event == 1:
         status.append('Correct')
-        correct += 1
+        variables['correct'] += 1
     elif event == 2:
         status.append('Incorrect - ' + questions[variables['cntQuestions']][1])
-        correct = 0
+        variables['correct'] = 0
     elif event == 3:
         variables['bank'] += variables['money'][variables['correct']]
         status.append('Banked £' + str(variables['money'][variables['correct']]))
@@ -172,13 +175,13 @@ def questionHandler(event):
         status.append('You have £' + str(variables['bank']) + ' in the bank')
         variables['cntRounds'] += 1
         variables['correct'] = variables['cntRquestions'] = 0
-	for i in peripheralThreads:
-		i.join()
+    for i in peripheralThreads:
+        i.join()
     event = ''
     variables['cntRquestions'] += 1
     variables['cntQuestions'] += 1
     status.append('You now have £' + str(variables['money'][variables['correct']]))
-    if correct == len(money) - 1:
+    if variables['correct'] == len(variables['money']) - 1:
         status.append('You have got all questions in round ' + str(variables['cntRounds']) + ' correct')
         variables['cntRounds'] += 1
         variables['cntRquestions'] = 1
@@ -191,6 +194,7 @@ def questionHandler(event):
 ##            print(str(i) + '\t' + contestants[i-1])
 ##            i += 1
 ##        contestants.remove(contestants[int(input('Please enter a selection (1 - ' + str(len(contestants)) + ')\n')) - 1])
+    questionControl()
 
 def importQuestions(file):
     global questions
