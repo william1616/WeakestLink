@@ -27,6 +27,7 @@ questions = []
 status = []
 questions = []
 peripherals = []
+peripheralThreads = []
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serversocket.bind(('localhost', 1024))
@@ -61,7 +62,6 @@ class connectListner (threading.Thread):
 			self.end = True
 
 class receiveCommand (threading.Thread):
-	global receive
 	def __init__(self, clientsocket):
 		threading.Thread.__init__(self)
 		self.clientsocket = clientsocket
@@ -69,38 +69,30 @@ class receiveCommand (threading.Thread):
 	def run(self):
 		while True:
 			print('server receive loop')
-			readable, writable, err = select.select([clientsocket.fileno()], [], [], 1)
+			readable, writable, err = select.select([self.clientsocket.fileno()], [], [], 1)
 			if readable:
 				msg = self.clientsocket.recv(4096)
-				check = clientsocket.recv(40).decode('UTF-8')
+				check = self.clientsocket.recv(40).decode('UTF-8')
 				assert(hashlib.sha1(msg).hexdigest() == check)
-				receive = (msg.decode('UTF-8'))
+				msg = json.loads(msg.decode('UTF-8'))
+				questionHandler(msg)
 			if self.end == True:
 				break
 	def join(self):
 			self.end = True
 
 def start():
-	global receive
-	updates = []
+	global peripheralThreads
 	disconnect()
 	startFrame.grid_forget()
 	mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
-	while True:
-		askQuestion()
-		updateClient()
-		i = 0
-		while i < len(peripherals):
-			updates.append(receiveCommand(peripherals[i]))
-			i += 1
-		for i in updates:
-			i.start()
-		while receive == '':
-			pass
-		for i in peripherals:
-			i.join()
-		questionHandler(receive)
-		receive = ''
+	askQuestion()
+	updateClient()
+	i = 0
+	for i in peripherals:
+		peripheralThreads.append(receiveCommand(i))
+	for i in peripheralThreads:
+		i.start()
 
 def connect():
         global listner
@@ -140,14 +132,14 @@ ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
 ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2, sticky=N)
 
 def askQuestion():
-    global questions, mainQ, variables 
+    global questions, mainQ, variables
     importQuestions(mainQ)
     #cntContestants = len(variables[1][variables[0].index('contestants')]) + 1
     if variables['cntQuestions'] < len('questions'):
         if variables['cntRquestions'] == 1:
-                status.append('Round ' + str(variables['cntRounds']) + ' starting')
-                status_update()
-                time.sleep(1)
+            status.append('Round ' + str(variables['cntRounds']) + ' starting')
+            status_update()
+            time.sleep(1)
         status.append('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
         status.append(questions[variables['cntQuestions']][0])
         variables['question'] = questions[variables['cntQuestions']][0]
@@ -160,7 +152,7 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event):
-    global questions, variables
+    global questions, variables, peripheralThreads
     if event == 1:
         status.append('Correct')
         correct += 1
@@ -180,6 +172,8 @@ def questionHandler(event):
         status.append('You have £' + str(variables['bank']) + ' in the bank')
         variables['cntRounds'] += 1
         variables['correct'] = variables['cntRquestions'] = 0
+	for i in peripheralThreads:
+		i.join()
     event = ''
     variables['cntRquestions'] += 1
     variables['cntQuestions'] += 1
