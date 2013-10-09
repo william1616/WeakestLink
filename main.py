@@ -13,6 +13,7 @@ window_title = 'The Weakest Link'
 status_lines = 10
 mainQ = 'questions.csv'
 finalQ = 'questions.csv'
+receive = ''
 variables = {}
 variables['cntQuestions'] = 0
 variables['correct'] = 0
@@ -26,6 +27,7 @@ questions = []
 status = []
 questions = []
 peripherals = []
+receivedCommand = ''
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serversocket.bind(('localhost', 1024))
@@ -33,38 +35,87 @@ serversocket.listen(5)
 serversocket.setblocking(False)
 
 def status_update():
-	i = 0
-	start_status.set('')
-	while True:
-		if i == len(status): break
-		if i > len(status) - status_lines:
-			start_status.set(start_status.get()+status[i]+'\n')
-		i += 1
+    i = 0
+    start_status.set('')
+    while True:
+        if i == len(status): break
+        if i > len(status) - status_lines:
+            start_status.set(start_status.get()+status[i]+'\n')
+        i += 1
 
 class connectListner (threading.Thread):
-	def __init__(self):
-		threading.Thread.__init__(self)
-		self.end = False
-	def run(self):
-		while True:
-			print('loop')
-			readable, writable, err = select.select([serversocket.fileno()], [], [], 1)
-			if readable:
-					clientsocket, address = serversocket.accept()
-					status.append(address[0] + ' Succesfully Connected')
-					status_update()
-					peripherals.append(clientsocket)
-			if self.end == True:
-				break
-	def join(self):
-			self.end = True
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.end = False
+    def run(self):
+        while True:
+            print('server loop')
+            readable, writable, err = select.select([serversocket.fileno()], [], [], 1)
+            if readable:
+                clientsocket, address = serversocket.accept()
+                status.append(address[0] + ' Succesfully Connected')
+                status_update()
+                peripherals.append(clientsocket)
+            if self.end == True:
+                break
+    def join(self):
+            self.end = True
+
+class receiveCommand (threading.Thread):
+    def __init__(self, clientsocket):
+        threading.Thread.__init__(self)
+        self.clientsocket = clientsocket
+        self.end = False
+    def run(self):
+        global receivedCommand
+        while True:
+            print('server receive loop')
+            readable, writable, err = select.select([self.clientsocket.fileno()], [], [], 1)
+            if readable:
+                msg = self.clientsocket.recv(4096)
+                #check = self.clientsocket.recv(40).decode('UTF-8')
+                #assert(hashlib.sha1(msg).hexdigest() == check)
+                receivedCommand = json.loads(msg.decode('UTF-8'))
+            if self.end == True:
+                break
+    def join(self):
+            self.end = True
+
+class questionControl(threading.Thread):
+    def __init__(self, ):
+        threading.Thread.__init__(self)
+        self.end = False
+    def run(self):
+        global receivedCommand
+        while True:
+            askQuestion()
+            updateClient()
+            i = 0
+            while True:
+                if self.end == True:
+                    break
+                if receivedCommand != '':
+                    if questionHandler(receivedCommand) == True:
+                        receivedCommand = ''
+                        break
+                    receivedCommand = ''
+            if self.end == True:
+                break
+    def join(self):
+            self.end = True
 
 def start():
-	disconnect()
-	startFrame.grid_forget()
-	mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
-	askQuestion()
-	updateClient()
+    global peripherals
+    peripheralThreads = []
+    disconnect()
+    startFrame.grid_forget()
+    mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    for i in peripherals:
+        peripheralThreads.append(receiveCommand(i))
+    for i in peripheralThreads:
+        i.start()
+    run = questionControl()
+    run.start()
 
 def connect():
         global listner
@@ -74,11 +125,11 @@ def connect():
         status_update()
         
 def disconnect():
-	global listner
-	if listner.isAlive():
-		listner.join()
-		status.append('Stopped Listner')
-		status_update()
+    global listner
+    if listner.isAlive():
+        listner.join()
+        status.append('Stopped Listner')
+        status_update()
 
 root = Tk()
 root.title(window_title)
@@ -104,14 +155,14 @@ ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
 ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2, sticky=N)
 
 def askQuestion():
-    global questions, mainQ, variables 
+    global questions, mainQ, variables
     importQuestions(mainQ)
     #cntContestants = len(variables[1][variables[0].index('contestants')]) + 1
-    if variables['cntQuestions'] < len('questions'):
+    if variables['cntQuestions'] < len(questions):
         if variables['cntRquestions'] == 1:
-                status.append('Round ' + str(variables['cntRounds']) + ' starting')
-                status_update()
-                time.sleep(1)
+            status.append('Round ' + str(variables['cntRounds']) + ' starting')
+            status_update()
+            time.sleep(1)
         status.append('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
         status.append(questions[variables['cntQuestions']][0])
         variables['question'] = questions[variables['cntQuestions']][0]
@@ -127,18 +178,19 @@ def questionHandler(event):
     global questions, variables
     if event == 1:
         status.append('Correct')
-        correct += 1
+        variables['correct'] += 1
     elif event == 2:
         status.append('Incorrect - ' + questions[variables['cntQuestions']][1])
-        correct = 0
+        variables['correct'] = 0
     elif event == 3:
         variables['bank'] += variables['money'][variables['correct']]
         status.append('Banked £' + str(variables['money'][variables['correct']]))
         status.append('£' + str(variables['bank']) + ' now in bank')
         variables['correct'] = 0
-        status.append('You now have £' + variables['money'][variables['correct']])
-        #variables[1][variables[0].index('cntQuestions')] =- 1 double check if this is needed?
-        return
+        status.append('You now have £' + str(variables['money'][variables['correct']]))
+        #variables['cntQuestions'] =- 1 double check if this is needed?
+        status_update()
+        return False
     elif event == 4:
         status.append('Time Up')
         status.append('You have £' + str(variables['bank']) + ' in the bank')
@@ -147,12 +199,13 @@ def questionHandler(event):
     event = ''
     variables['cntRquestions'] += 1
     variables['cntQuestions'] += 1
-    status.append('You now have £' + str(variables['money'][variables['correct']]))
-    if correct == len(money) - 1:
+    if variables['correct'] == len(variables['money']) - 1:
         status.append('You have got all questions in round ' + str(variables['cntRounds']) + ' correct')
+        status.append('You have £' + str(variables['bank']) + ' in the bank')
         variables['cntRounds'] += 1
         variables['cntRquestions'] = 1
         variables['correct'] = 0
+    status.append('You now have £' + str(variables['money'][variables['correct']]))
     status_update()
 ##    if cntRquestions == 1:
 ##        print('You must now choose the Weakest Link')
@@ -161,6 +214,7 @@ def questionHandler(event):
 ##            print(str(i) + '\t' + contestants[i-1])
 ##            i += 1
 ##        contestants.remove(contestants[int(input('Please enter a selection (1 - ' + str(len(contestants)) + ')\n')) - 1])
+    return True
 
 def importQuestions(file):
     global questions
@@ -173,13 +227,13 @@ def importQuestions(file):
     # with statement automatically closes the csv file cleanly even in event of unexpected script termination
 
 def updateClient():
-	global variables
-	jsonVariables = json.dumps(variables)
-	assert(variables == json.loads(jsonVariables))
-	jsonBytes = jsonVariables.encode('UTF-8')
-	check = hashlib.sha1(jsonBytes).hexdigest().encode('UTF-8')
-	for clientsocket in peripherals:
-		bytesSent = clientsocket.send(jsonBytes)
-		bytesSent = clientsocket.send(check)
-
+    global variables
+    jsonVariables = json.dumps(variables)
+    assert(variables == json.loads(jsonVariables))
+    jsonBytes = jsonVariables.encode('UTF-8')
+    check = hashlib.sha1(jsonBytes).hexdigest().encode('UTF-8')
+    for clientsocket in peripherals:
+        bytesSent = clientsocket.send(jsonBytes)
+        bytesSent = clientsocket.send(check)
+    
 root.mainloop()
