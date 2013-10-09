@@ -27,7 +27,7 @@ questions = []
 status = []
 questions = []
 peripherals = []
-peripheralThreads = []
+receivedCommand = ''
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serversocket.bind(('localhost', 1024))
@@ -67,6 +67,7 @@ class receiveCommand (threading.Thread):
 		self.clientsocket = clientsocket
 		self.end = False
 	def run(self):
+		global receivedCommand
 		while True:
 			print('server receive loop')
 			readable, writable, err = select.select([self.clientsocket.fileno()], [], [], 1)
@@ -74,28 +75,43 @@ class receiveCommand (threading.Thread):
 				msg = self.clientsocket.recv(4096)
 				#check = self.clientsocket.recv(40).decode('UTF-8')
 				#assert(hashlib.sha1(msg).hexdigest() == check)
-				msg = json.loads(msg.decode('UTF-8'))
-				questionHandler(msg)
+				receivedCommand = json.loads(msg.decode('UTF-8'))
+			if self.end == True:
+				break
+	def join(self):
+			self.end = True
+
+class questionControl():
+	def __init__(self, ):
+		threading.Thread.__init__(self)
+		self.end = False
+	def run(self):
+		global receivedCommand
+		while True:
+			askQuestion()
+			updateClient()
+			i = 0
+			while questionHandler == '':
+				if self.end == True:
+					break
+			else
+				questionHandler(receivedCommand)
 			if self.end == True:
 				break
 	def join(self):
 			self.end = True
 
 def start():
-	global peripherals, peripheralThreads
+	global peripherals
 	disconnect()
 	startFrame.grid_forget()
 	mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
 	for i in peripherals:
 		peripheralThreads.append(receiveCommand(i))
-	questionControl()
-
-def questionControl():
-	askQuestion()
-	updateClient()
-	i = 0
 	for i in peripheralThreads:
 		i.start()
+	run = questionControl()
+	run.start()
 
 def connect():
         global listner
@@ -155,7 +171,7 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event):
-    global questions, variables, peripheralThreads
+    global questions, variables
     if event == 1:
         status.append('Correct')
         variables['correct'] += 1
@@ -175,8 +191,6 @@ def questionHandler(event):
         status.append('You have £' + str(variables['bank']) + ' in the bank')
         variables['cntRounds'] += 1
         variables['correct'] = variables['cntRquestions'] = 0
-    for i in peripheralThreads:
-        i.join()
     event = ''
     variables['cntRquestions'] += 1
     variables['cntQuestions'] += 1
