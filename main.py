@@ -10,7 +10,7 @@ import sys
 import json
 
 window_title = 'The Weakest Link'
-status_lines = 10
+status_lines = 25
 mainQ = 'questions.csv'
 finalQ = 'questions.csv'
 receive = ''
@@ -21,13 +21,14 @@ variables['cntRounds'] = 1
 variables['cntRquestions'] = 1
 variables['bank'] = 0
 variables['question'] = ''
-variables['contestants'] = ['bill','ben','bob','cat','hat','matt','mouse','man']
+variables['contestants'] = {'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}
 variables['money'] = [0, 50,100,200,300,400,500,1000,2500,5000]
 questions = []
 status = []
 questions = []
 peripherals = []
 receivedCommand = ''
+crtContestant = -1
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serversocket.bind(('localhost', 1024))
@@ -155,16 +156,21 @@ ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
 ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2, sticky=N)
 
 def askQuestion():
-    global questions, mainQ, variables
+    global questions, mainQ, variables, crtContestant
     importQuestions(mainQ)
-    #cntContestants = len(variables[1][variables[0].index('contestants')]) + 1
+    if crtContestant <= len(variables['contestants']):
+        crtContestant += 1
+    else:
+        crtContestant = 0
     if variables['cntQuestions'] < len(questions):
         if variables['cntRquestions'] == 1:
+            for i in list(variables['contestants'].keys()):
+                variables['contestants'][i] = 0
             status.append('Round ' + str(variables['cntRounds']) + ' starting')
             status_update()
             time.sleep(1)
         status.append('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
-        status.append(questions[variables['cntQuestions']][0])
+        status.append(list(variables['contestants'].keys())[crtContestant] + ': ' + questions[variables['cntQuestions']][0])
         variables['question'] = questions[variables['cntQuestions']][0]
         status_update()
     else:
@@ -175,10 +181,11 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event):
-    global questions, variables
+    global questions, variables, receivedCommand, crtContestant
     if event == 1:
         status.append('Correct')
         variables['correct'] += 1
+        variables['contestants'][list(variables['contestants'].keys())[crtContestant]] += 1
     elif event == 2:
         status.append('Incorrect - ' + questions[variables['cntQuestions']][1])
         variables['correct'] = 0
@@ -206,14 +213,20 @@ def questionHandler(event):
         variables['cntRquestions'] = 1
         variables['correct'] = 0
     status.append('You now have £' + str(variables['money'][variables['correct']]))
+    if variables['cntRquestions'] == 1:
+        status.append('You must now choose the Weakest Link')
+        i = 1
+        while i - 1 < len(variables['contestants']):
+            status.append(str(i) + '\t' + list(variables['contestants'].keys())[i-1] + '\t' + str(list(variables['contestants'].values())[i-1]))
+            i += 1
+        while True:
+            if receivedCommand != '':
+                if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= len(variables['contestants']):
+                    variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
+                    receivedCommand = ''
+                    break
+                receivedCommand = ''
     status_update()
-##    if cntRquestions == 1:
-##        print('You must now choose the Weakest Link')
-##        i = 1
-##        while i - 1 < len(contestants):
-##            print(str(i) + '\t' + contestants[i-1])
-##            i += 1
-##        contestants.remove(contestants[int(input('Please enter a selection (1 - ' + str(len(contestants)) + ')\n')) - 1])
     return True
 
 def importQuestions(file):
