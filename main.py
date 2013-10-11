@@ -27,11 +27,14 @@ questions = []
 status = []
 questions = []
 peripherals = []
+bindAddresses = ['localhost']
+bindPort = 1024
 receivedCommand = ''
 crtContestant = -1
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serversocket.bind(('10.20.56.21', 1024))
+for i address in bindAddresses:
+    serversocket.bind((address, bindPort))
 serversocket.listen(5)
 serversocket.setblocking(False)
 
