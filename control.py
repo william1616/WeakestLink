@@ -1,48 +1,72 @@
 from tkinter import *
 from tkinter import ttk
-import csv
-import sys
+import socket
+import threading
+import select
+import json
 import time
 
-contestants = ['bill','ben','bob','cat','hat','matt','mouse','man'] # change to listcontestants
-questions = []
-money = [0, 50,100,200,300,400,500,1000,2500,5000]
-mainQ = 'questions.csv'
-finalQ = 'questions.csv'
-cntQuestions = 0
-correct = 0
-cntRounds = 1
-cntRquestions = 1
+clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+class listner(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.end = False
+    def run(self):
+        global variables
+        while True:
+            print('receive loop')
+            readable, writable, err = select.select([clientsocket.fileno()], [], [], 1)
+            if readable:
+                msg = clientsocket.recv(4096)
+                #check = self.clientsocket.recv(40).decode('UTF-8')
+                #assert(hashlib.sha1(msg).hexdigest() == check)
+                variables = json.loads(msg.decode('UTF-8'))
+                status_update()
+            if self.end == True:
+                break
+    def join(self):
+            self.end = True       
+
+def send(msg):
+    msg = json.dumps(msg).encode('UTF-8')
+    clientsocket.send(msg)
 
 def correctAns():
-    questionHandler(1)
-    askQuestion()
+    send(1)
 
 def incorrectAns():
-    questionHandler(2)
-    askQuestion()
-    
-def timeEvent():
-    questionHandler(4)
-    askQuestion()
+    send(2)
     
 def bankEvent():
-    questionHandler(3)
+    send(3)
+
+def timeEvent():
+    send(4)
 
 def start():
-    global startB, correctB, incorrectB, timeB, bankB
-    startB.grid_forget()
-    correctB.grid(column=2, row=1, sticky=N)
-    incorrectB.grid(column=2, row=2, sticky=N)
-    timeB.grid(column=3, row=1, sticky=N)
-    bankB.grid(column=3, row=2, sticky=N)
-    l1.grid(column=1, row=1, sticky=N)
-    l2.grid(column=1, row=2, sticky=N)
-    l3.grid(column=4, row=1, sticky=N)
-    l4.grid(column=4, row=2, sticky=N)
-    l5.grid(column=5, row=1, sticky=N)
-    l6.grid(column=5, row=2, sticky=N)
-    askQuestion()
+    global startButton, correctButtton, incorrectButtton, timeButtton, bankButtton, clientsocket
+    try:
+        print('Attempting to connect to ' + address.get())
+        clientsocket.connect((address.get(),1024))
+    except:
+        print('Failed to connect to ' + address.get())
+        return
+    receive = listner()
+    receive.start()
+    startButton.grid_forget()
+    addressEntry.grid_forget()
+    addressLabel.grid_forget()
+    correctButton.grid(column=2, row=1, sticky=N)
+    incorrectButton.grid(column=2, row=2, sticky=N)
+    timeButton.grid(column=3, row=1, sticky=N)
+    bankButton.grid(column=3, row=2, sticky=N)
+    statusValue.grid(column=1, row=1, sticky=N)
+    questionValue.grid(column=1, row=2, sticky=N)
+    moneyLabel.grid(column=4, row=1, sticky=N)
+    bankLabel.grid(column=4, row=2, sticky=N)
+    moneyValue.grid(column=5, row=1, sticky=N)
+    bankValue.grid(column=5, row=2, sticky=N)   
 
 root = Tk()
 root.title("Control")
@@ -53,96 +77,38 @@ mainframe.columnconfigure(0, weight=1)
 mainframe.rowconfigure(0, weight=1)
 
 question = StringVar()
-state = StringVar()
+status = StringVar()
 cur_money = IntVar()
 bank = IntVar()
+address = StringVar()
 
-l1 = ttk.Label(mainframe, textvariable=state, width=100, background='red')
-l2 = ttk.Label(mainframe, textvariable=question, width=100)
-l3 = ttk.Label(mainframe, text='Money: ')
-l4 = ttk.Label(mainframe, text='Bank: ')
-l5 = ttk.Label(mainframe, textvariable=cur_money)
-l6 = ttk.Label(mainframe, textvariable=bank)
+statusValue = ttk.Label(mainframe, textvariable=status, width=100, background='red')
+questionValue = ttk.Label(mainframe, textvariable=question, width=100)
+moneyLabel = ttk.Label(mainframe, text='Money: ')
+bankLabel = ttk.Label(mainframe, text='Bank: ')
+moneyValue = ttk.Label(mainframe, textvariable=cur_money)
+bankValue = ttk.Label(mainframe, textvariable=bank)
 
-startB = ttk.Button(mainframe, text="Start", command=start)
-startB.grid(column=1, row=2, sticky=N)
-correctB = ttk.Button(mainframe, text="Correct", command=correctAns)
-incorrectB = ttk.Button(mainframe, text="Incorrect", command=incorrectAns)
-timeB = ttk.Button(mainframe, text="Time Up", command=timeEvent)
-bankB = ttk.Button(mainframe, text="Bank", command=bankEvent)
+startButton = ttk.Button(mainframe, text="Connect", command=start)
+startButton.grid(column=1, row=2, sticky=N)
+exitButton = ttk.Button(mainframe, text="Exit", command=root.destroy)
+exitButton.grid(column=2, row=2, sticky=N)
+addressEntry = ttk.Entry(mainframe, textvariable=address)
+addressEntry.grid(column=1, row=1, sticky=N)
+addressLabel = ttk.Label(mainframe, text="Server IP address")
+addressLabel.grid(column=2, row=1, sticky=N)
+correctButton = ttk.Button(mainframe, text="Correct", command=correctAns)
+incorrectButton = ttk.Button(mainframe, text="Incorrect", command=incorrectAns)
+timeButton = ttk.Button(mainframe, text="Time Up", command=timeEvent)
+bankButton = ttk.Button(mainframe, text="Bank", command=bankEvent)
 
-def importQuestions(file):
-    global questions
-    with open(file) as csvfile: # add search directory for csv
-        questionfile = csv.reader(csvfile)
-        for row in questionfile:
-            # where row[0] = questions & row[1] = awnser
-            if row[0] and row[1]:
-                questions.append([row[0], row[1]])
-    # with statement automatically closes the csv file cleanly even in event of unexpected script termination
-
-def askQuestion():
-    global money, questions, contestants, mainQ, cntQuestions, correct, cntRounds, cntRquestions, bank
-    importQuestions(mainQ)
-    cntContestants = len(contestants) + 1
-    if cntQuestions < len(questions):
-        if cntRquestions == 1:
-            state.set('Round ' + str(cntRounds) + ' starting')
-            print(state.get())
-            question.set('')
-            mainframe.update()
-            time.sleep(1)
-            cur_money.set(money[correct])
-        state.set('Round ' + str(cntRounds) + ' Question ' + str(cntRquestions))
-        print(state.get())
-        question.set(questions[cntQuestions][0])
-        print(question.get())
-    else:
-        print('So this is Embarasing')
-        print('We seam to have run out of questions')
-        print('Exiting...')
-        sys.exit()
-
-def questionHandler(event):
-    global money, questions, contestants, mainQ, cntQuestions, correct, cntRounds, cntRquestions, bank
-    if event == 1:
-        print('Correct')
-        state.set('Correct')
-        correct += 1
-    elif event == 2:
-        print('Incorrect - ' + questions[cntQuestions][1])
-        correct = 0
-    elif event == 3:
-        print('Banked £' + str(money[correct]))
-        print('£' + str(bank.get()) + ' now in bank')
-        bank.set(bank.get() + money[correct])
-        correct = 0
-        print('You now have £0')
-        cur_money.set(money[correct])
-        mainframe.update()
-        cntQuestions =- 1
-        return
-    elif event == 4:
-        print('Time Up')
-        print('You have £' + str(bank.get()) + ' in the bank')
-        cntRounds += 1
-        correct = cntRquestions = 0
-    event = ''
-    cntRquestions += 1
-    cntQuestions += 1
-    print('You now have £' + str(money[correct]))
-    cur_money.set(money[correct])
-    if correct == len(money) - 1:
-        print('You have got all questions in round ' + str(cntRounds) + ' correct')
-        cntRounds += 1
-        cntRquestions = 1
-        correct = 0
-##    if cntRquestions == 1:
-##        print('You must now choose the Weakest Link')
-##        i = 1
-##        while i - 1 < len(contestants):
-##            print(str(i) + '\t' + contestants[i-1])
-##            i += 1
-##        contestants.remove(contestants[int(input('Please enter a selection (1 - ' + str(len(contestants)) + ')\n')) - 1])
+def status_update():
+    if variables['cntRquestions'] == 1:
+        status.set('Round ' + str(variables['cntRounds']) + ' starting')
+        time.sleep(1)
+    status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
+    question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
+    cur_money.set(list(variables['money'])[variables['correct']])
+    bank.set(variables['bank'])
 
 root.mainloop()

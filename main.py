@@ -23,6 +23,7 @@ variables['bank'] = 0
 variables['question'] = ''
 variables['contestants'] = {'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}
 variables['money'] = [0, 50,100,200,300,400,500,1000,2500,5000]
+variables['crtContestant'] = -1
 questions = []
 status = []
 questions = []
@@ -30,10 +31,9 @@ peripherals = []
 bindAddresses = ['localhost']
 bindPort = 1024
 receivedCommand = ''
-crtContestant = -1
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-for i address in bindAddresses:
+for address in bindAddresses:
     serversocket.bind((address, bindPort))
 serversocket.listen(5)
 serversocket.setblocking(False)
@@ -159,12 +159,12 @@ ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
 ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2, sticky=N)
 
 def askQuestion():
-    global questions, mainQ, variables, crtContestant
+    global questions, mainQ, variables
     importQuestions(mainQ)
-    if crtContestant < len(variables['contestants']) - 1:
-        crtContestant += 1
+    if variables['crtContestant'] < len(variables['contestants']) - 1:
+        variables['crtContestant'] += 1
     else:
-        crtContestant = 0
+        variables['crtContestant'] = 0
     if variables['cntQuestions'] < len(questions):
         if variables['cntRquestions'] == 1:
             for i in list(variables['contestants'].keys()):
@@ -173,8 +173,8 @@ def askQuestion():
             status_update()
             time.sleep(1)
         status.append('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
-        status.append(list(variables['contestants'].keys())[crtContestant] + ': ' + questions[variables['cntQuestions']][0])
         variables['question'] = questions[variables['cntQuestions']][0]
+        status.append(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
         status_update()
     else:
         status.append('So this is Embarasing')
@@ -184,11 +184,11 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event):
-    global questions, variables, receivedCommand, crtContestant
+    global questions, variables, receivedCommand
     if event == 1:
         status.append('Correct')
         variables['correct'] += 1
-        variables['contestants'][list(variables['contestants'].keys())[crtContestant]] += 1
+        variables['contestants'][list(variables['contestants'].keys())[variables['crtContestant']]] += 1
     elif event == 2:
         status.append('Incorrect - ' + questions[variables['cntQuestions']][1])
         variables['correct'] = 0
@@ -200,6 +200,7 @@ def questionHandler(event):
         status.append('You now have £' + str(variables['money'][variables['correct']]))
         #variables['cntQuestions'] =- 1 double check if this is needed?
         status_update()
+        updateClient()
         return False
     elif event == 4:
         status.append('Time Up')
@@ -253,6 +254,6 @@ def updateClient():
     check = hashlib.sha1(jsonBytes).hexdigest().encode('UTF-8')
     for clientsocket in peripherals:
         bytesSent = clientsocket.send(jsonBytes)
-        bytesSent = clientsocket.send(check)
+        #bytesSent = clientsocket.send(check)
     
 root.mainloop()
