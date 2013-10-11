@@ -31,7 +31,7 @@ receivedCommand = ''
 crtContestant = -1
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serversocket.bind(('localhost', 1024))
+serversocket.bind(('10.20.56.21', 1024))
 serversocket.listen(5)
 serversocket.setblocking(False)
 
@@ -96,9 +96,9 @@ class questionControl(threading.Thread):
                 if self.end == True:
                     break
                 if receivedCommand != '':
-                    if questionHandler(receivedCommand) == True:
-                        receivedCommand = ''
-                        break
+                    if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
+                        if questionHandler(receivedCommand) == True:
+                            break
                     receivedCommand = ''
             if self.end == True:
                 break
@@ -146,7 +146,7 @@ mainFrame.rowconfigure(0, weight=1)
 
 start_status = StringVar()
 
-ttk.Label(startFrame, text='Status', font=font.Font(size=16, underline=True)).grid(column=1, row=1, sticky=N)
+ttk.Label(startFrame, text='Status').grid(column=1, row=1, sticky=N)
 ttk.Label(startFrame, textvariable=start_status, width=100).grid(column=1, row=2, sticky=N)
 ttk.Button(startFrame, text='Start', command=start).grid(column=2, row=1, sticky=N)
 ttk.Button(startFrame, text='Start Listner', command=connect).grid(column=2, row=2, sticky=N)
@@ -158,7 +158,7 @@ ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2,
 def askQuestion():
     global questions, mainQ, variables, crtContestant
     importQuestions(mainQ)
-    if crtContestant <= len(variables['contestants']):
+    if crtContestant < len(variables['contestants']) - 1:
         crtContestant += 1
     else:
         crtContestant = 0
@@ -219,13 +219,16 @@ def questionHandler(event):
         while i - 1 < len(variables['contestants']):
             status.append(str(i) + '\t' + list(variables['contestants'].keys())[i-1] + '\t' + str(list(variables['contestants'].values())[i-1]))
             i += 1
+        status_update()
+        receivedCommand = ''
         while True:
             if receivedCommand != '':
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= len(variables['contestants']):
+                    status.append(list(variables['contestants'].keys())[receivedCommand - 1] + ' you are the Weakest Link! Goodbye')
                     variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
-                    receivedCommand = ''
                     break
                 receivedCommand = ''
+    receivedCommand = ''
     status_update()
     return True
 
