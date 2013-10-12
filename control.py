@@ -32,18 +32,6 @@ def send(msg):
     msg = json.dumps(msg).encode('UTF-8')
     clientsocket.send(msg)
 
-def correctAns():
-    send(1)
-
-def incorrectAns():
-    send(2)
-    
-def bankEvent():
-    send(3)
-
-def timeEvent():
-    send(4)
-
 def start():
     global startButton, correctButtton, incorrectButtton, timeButtton, bankButtton, clientsocket
     try:
@@ -54,61 +42,114 @@ def start():
         return
     receive = listner()
     receive.start()
-    startButton.grid_forget()
-    addressEntry.grid_forget()
-    addressLabel.grid_forget()
-    correctButton.grid(column=2, row=1, sticky=N)
-    incorrectButton.grid(column=2, row=2, sticky=N)
-    timeButton.grid(column=3, row=1, sticky=N)
-    bankButton.grid(column=3, row=2, sticky=N)
-    statusValue.grid(column=1, row=1, sticky=N)
-    questionValue.grid(column=1, row=2, sticky=N)
-    moneyLabel.grid(column=4, row=1, sticky=N)
-    bankLabel.grid(column=4, row=2, sticky=N)
-    moneyValue.grid(column=5, row=1, sticky=N)
-    bankValue.grid(column=5, row=2, sticky=N)   
+    startFrame.grid_forget()
+    mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
 
 root = Tk()
 root.title("Control")
 
-mainframe = ttk.Frame(root, padding="3 3 3 3")
-mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
-mainframe.columnconfigure(0, weight=1)
-mainframe.rowconfigure(0, weight=1)
+startFrame = ttk.Frame(root, padding="3 3 3 3")
+startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+startFrame.columnconfigure(0, weight=1)
+startFrame.rowconfigure(0, weight=1)
+
+address = StringVar()
+
+ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
+ttk.Button(startFrame, text="Exit", command=root.destroy).grid(column=2, row=2, sticky=N)
+ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
+ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
+
+mainFrame = ttk.Frame(root, padding="3 3 3 3")
+mainFrame.columnconfigure(0, weight=1)
+mainFrame.rowconfigure(0, weight=1)
 
 question = StringVar()
 status = StringVar()
 cur_money = IntVar()
 bank = IntVar()
-address = StringVar()
 
-statusValue = ttk.Label(mainframe, textvariable=status, width=100, background='red')
-questionValue = ttk.Label(mainframe, textvariable=question, width=100)
-moneyLabel = ttk.Label(mainframe, text='Money: ')
-bankLabel = ttk.Label(mainframe, text='Bank: ')
-moneyValue = ttk.Label(mainframe, textvariable=cur_money)
-bankValue = ttk.Label(mainframe, textvariable=bank)
+ttk.Label(mainFrame, textvariable=status, width=100, background='red').grid(column=1, row=1, sticky=N)
+ttk.Label(mainFrame, textvariable=question, width=100).grid(column=1, row=2, sticky=N)
+ttk.Label(mainFrame, text='Money: ').grid(column=4, row=1, sticky=N)
+ttk.Label(mainFrame, text='Bank: ').grid(column=4, row=2, sticky=N)
+ttk.Label(mainFrame, textvariable=cur_money).grid(column=5, row=1, sticky=N)
+ttk.Label(mainFrame, textvariable=bank).grid(column=5, row=2, sticky=N)
+ttk.Button(mainFrame, text="Correct", command=lambda: send(1)).grid(column=2, row=1, sticky=N)
+ttk.Button(mainFrame, text="Incorrect", command=lambda: send(2)).grid(column=2, row=2, sticky=N)
+ttk.Button(mainFrame, text="Bank", command=lambda: send(3)).grid(column=3, row=2, sticky=N)
+ttk.Button(mainFrame, text="Time Up", command=lambda: send(4)).grid(column=3, row=1, sticky=N)
 
-startButton = ttk.Button(mainframe, text="Connect", command=start)
-startButton.grid(column=1, row=2, sticky=N)
-exitButton = ttk.Button(mainframe, text="Exit", command=root.destroy)
-exitButton.grid(column=2, row=2, sticky=N)
-addressEntry = ttk.Entry(mainframe, textvariable=address)
-addressEntry.grid(column=1, row=1, sticky=N)
-addressLabel = ttk.Label(mainframe, text="Server IP address")
-addressLabel.grid(column=2, row=1, sticky=N)
-correctButton = ttk.Button(mainframe, text="Correct", command=correctAns)
-incorrectButton = ttk.Button(mainframe, text="Incorrect", command=incorrectAns)
-timeButton = ttk.Button(mainframe, text="Time Up", command=timeEvent)
-bankButton = ttk.Button(mainframe, text="Bank", command=bankEvent)
+voteFrame = ttk.Frame(root, padding="3 3 3 3")
+voteFrame.columnconfigure(0, weight=1)
+voteFrame.rowconfigure(0, weight=1)
+
+vote1name = StringVar()
+vote2name = StringVar()
+vote3name = StringVar()
+vote4name = StringVar()
+vote5name = StringVar()
+vote6name = StringVar()
+vote7name = StringVar()
+vote8name = StringVar()
+
+ttk.Button(voteFrame, textvariable=vote1name, command=lambda: send(1)).grid(column=1, row=1, sticky=N)
+ttk.Button(voteFrame, textvariable=vote2name, command=lambda: send(2)).grid(column=2, row=1, sticky=N)
+ttk.Button(voteFrame, textvariable=vote3name, command=lambda: send(3)).grid(column=3, row=1, sticky=N)
+ttk.Button(voteFrame, textvariable=vote4name, command=lambda: send(4)).grid(column=4, row=1, sticky=N)
+ttk.Button(voteFrame, textvariable=vote5name, command=lambda: send(5)).grid(column=1, row=2, sticky=N)
+ttk.Button(voteFrame, textvariable=vote6name, command=lambda: send(6)).grid(column=2, row=2, sticky=N)
+ttk.Button(voteFrame, textvariable=vote7name, command=lambda: send(7)).grid(column=3, row=2, sticky=N)
+ttk.Button(voteFrame, textvariable=vote8name, command=lambda: send(8)).grid(column=4, row=2, sticky=N)
 
 def status_update():
-    if variables['cntRquestions'] == 1:
+    print('gamemode: ' + str(variables['gamemode']))
+    if variables['gamemode'] == 0:
         status.set('Round ' + str(variables['cntRounds']) + ' starting')
-        time.sleep(1)
-    status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
-    question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
-    cur_money.set(list(variables['money'])[variables['correct']])
-    bank.set(variables['bank'])
+    if variables['gamemode'] == 1:
+        status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
+        question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
+        cur_money.set(list(variables['money'])[variables['correct']])
+        bank.set(variables['bank'])
+        voteFrame.grid_forget()
+        mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    elif variables['gamemode'] == 2:
+        print('gamemode 2')
+##        try:
+##            vote1name.set(list(variables['contestants']).keys()[0])
+##        except:
+##            vote1name.set('')
+##        try:
+##            vote2name.set(list(variables['contestants']).keys()[1])
+##        except:
+##            vote2name.set('')
+##        try:
+##            vote3name.set(list(variables['contestants']).keys()[2])
+##        except:
+##            vote3name.set('')
+##        try:
+##            vote4name.set(list(variables['contestants']).keys()[3])
+##        except:
+##            vote4name.set('')
+##        try:
+##            vote5name.set(list(variables['contestants']).keys()[4])
+##        except:
+##            vote5name.set('')
+##        try:
+##            vote6name.set(list(variables['contestants']).keys()[5])
+##        except:
+##            vote6name.set('')
+##        try:
+##            vote7name.set(list(variables['contestants']).keys()[6])
+##        except:
+##            vote7name.set('')
+##        try:
+##            vote8name.set(list(variables['contestants']).keys()[7])
+##        except:
+##            vote8name.set('')
+        print('forget mainFrame')
+        print('grid voteFrame')
+        voteFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+        print('done')
 
 root.mainloop()
