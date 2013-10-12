@@ -24,6 +24,8 @@ variables['question'] = ''
 variables['contestants'] = {'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}
 variables['money'] = [0, 50,100,200,300,400,500,1000,2500,5000]
 variables['crtContestant'] = -1
+variables['gamemode'] = 0
+#0 = starting, 1 = questions, 2 = voting, 3 = final
 questions = []
 status = []
 questions = []
@@ -93,7 +95,6 @@ class questionControl(threading.Thread):
         global receivedCommand
         while True:
             askQuestion()
-            updateClient()
             i = 0
             while True:
                 if self.end == True:
@@ -109,11 +110,13 @@ class questionControl(threading.Thread):
             self.end = True
 
 def start():
-    global peripherals
+    global peripherals, variables, mainQ
     peripheralThreads = []
+    importQuestions(mainQ)
     disconnect()
     startFrame.grid_forget()
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    variables['gamemode'] = 1
     for i in peripherals:
         peripheralThreads.append(receiveCommand(i))
     for i in peripheralThreads:
@@ -159,8 +162,7 @@ ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
 ttk.Label(mainFrame, textvariable=start_status, width=100).grid(column=1, row=2, sticky=N)
 
 def askQuestion():
-    global questions, mainQ, variables
-    importQuestions(mainQ)
+    global questions, variables
     if variables['crtContestant'] < len(variables['contestants']) - 1:
         variables['crtContestant'] += 1
     else:
@@ -170,12 +172,16 @@ def askQuestion():
             for i in list(variables['contestants'].keys()):
                 variables['contestants'][i] = 0
             status.append('Round ' + str(variables['cntRounds']) + ' starting')
+            variables['gamemode'] = 0
             status_update()
+            updateClient()
             time.sleep(1)
+        variables['gamemode'] = 1
         status.append('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
         variables['question'] = questions[variables['cntQuestions']][0]
         status.append(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
         status_update()
+        updateClient()
     else:
         status.append('So this is Embarasing')
         status.append('We seam to have run out of questions')
@@ -218,12 +224,14 @@ def questionHandler(event):
         variables['correct'] = 0
     status.append('You now have £' + str(variables['money'][variables['correct']]))
     if variables['cntRquestions'] == 1:
+        variables['gamemode'] = 2
         status.append('You must now choose the Weakest Link')
         i = 1
         while i - 1 < len(variables['contestants']):
             status.append(str(i) + '\t' + list(variables['contestants'].keys())[i-1] + '\t' + str(list(variables['contestants'].values())[i-1]))
             i += 1
         status_update()
+        updateClient()
         receivedCommand = ''
         while True:
             if receivedCommand != '':
@@ -232,6 +240,7 @@ def questionHandler(event):
                     variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
                     break
                 receivedCommand = ''
+                variables['gamemode'] = 1
     receivedCommand = ''
     status_update()
     return True
