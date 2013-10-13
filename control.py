@@ -42,8 +42,13 @@ def start():
         return
     receive = listner()
     receive.start()
-    startFrame.grid_forget()
+    startFrame.grid_remove()
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+
+def removeContestant(contestantIndex):
+    voteFrame.grid_remove()
+    mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    send(contestantIndex)
 
 root = Tk()
 root.title("Control")
@@ -61,8 +66,10 @@ ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
 ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
 
 mainFrame = ttk.Frame(root, padding="3 3 3 3")
+mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
 mainFrame.columnconfigure(0, weight=1)
 mainFrame.rowconfigure(0, weight=1)
+mainFrame.grid_remove()
 
 question = StringVar()
 status = StringVar()
@@ -81,8 +88,10 @@ ttk.Button(mainFrame, text="Bank", command=lambda: send(3)).grid(column=3, row=2
 ttk.Button(mainFrame, text="Time Up", command=lambda: send(4)).grid(column=3, row=1, sticky=N)
 
 voteFrame = ttk.Frame(root, padding="3 3 3 3")
+voteFrame.grid(column=0, row=0, sticky=(N, W, E, S))
 voteFrame.columnconfigure(0, weight=1)
 voteFrame.rowconfigure(0, weight=1)
+voteFrame.grid_remove()
 
 vote1name = StringVar()
 vote2name = StringVar()
@@ -93,14 +102,14 @@ vote6name = StringVar()
 vote7name = StringVar()
 vote8name = StringVar()
 
-ttk.Button(voteFrame, textvariable=vote1name, command=lambda: send(1)).grid(column=1, row=1, sticky=N)
-ttk.Button(voteFrame, textvariable=vote2name, command=lambda: send(2)).grid(column=2, row=1, sticky=N)
-ttk.Button(voteFrame, textvariable=vote3name, command=lambda: send(3)).grid(column=3, row=1, sticky=N)
-ttk.Button(voteFrame, textvariable=vote4name, command=lambda: send(4)).grid(column=4, row=1, sticky=N)
-ttk.Button(voteFrame, textvariable=vote5name, command=lambda: send(5)).grid(column=1, row=2, sticky=N)
-ttk.Button(voteFrame, textvariable=vote6name, command=lambda: send(6)).grid(column=2, row=2, sticky=N)
-ttk.Button(voteFrame, textvariable=vote7name, command=lambda: send(7)).grid(column=3, row=2, sticky=N)
-ttk.Button(voteFrame, textvariable=vote8name, command=lambda: send(8)).grid(column=4, row=2, sticky=N)
+ttk.Button(voteFrame, textvariable=vote1name, command=lambda: removeContestant(1)).grid(column=1, row=1, sticky=N)
+ttk.Button(voteFrame, textvariable=vote2name, command=lambda: removeContestant(2)).grid(column=2, row=1, sticky=N)
+ttk.Button(voteFrame, textvariable=vote3name, command=lambda: removeContestant(3)).grid(column=3, row=1, sticky=N)
+ttk.Button(voteFrame, textvariable=vote4name, command=lambda: removeContestant(4)).grid(column=4, row=1, sticky=N)
+ttk.Button(voteFrame, textvariable=vote5name, command=lambda: removeContestant(5)).grid(column=1, row=2, sticky=N)
+ttk.Button(voteFrame, textvariable=vote6name, command=lambda: removeContestant(6)).grid(column=2, row=2, sticky=N)
+ttk.Button(voteFrame, textvariable=vote7name, command=lambda: removeContestant(7)).grid(column=3, row=2, sticky=N)
+ttk.Button(voteFrame, textvariable=vote8name, command=lambda: removeContestant(8)).grid(column=4, row=2, sticky=N)
 
 def status_update():
     print('gamemode: ' + str(variables['gamemode']))
@@ -111,10 +120,7 @@ def status_update():
         question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
         cur_money.set(list(variables['money'])[variables['correct']])
         bank.set(variables['bank'])
-        voteFrame.grid_forget()
-        mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     elif variables['gamemode'] == 2:
-        print('gamemode 2')
 ##        try:
 ##            vote1name.set(list(variables['contestants']).keys()[0])
 ##        except:
@@ -147,9 +153,10 @@ def status_update():
 ##            vote8name.set(list(variables['contestants']).keys()[7])
 ##        except:
 ##            vote8name.set('')
-        print('forget mainFrame')
         print('grid voteFrame')
         voteFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+        print('remove mainFrame')
+##        mainFrame.grid_remove()
         print('done')
 
 root.mainloop()

@@ -114,8 +114,8 @@ def start():
     peripheralThreads = []
     importQuestions(mainQ)
     disconnect()
-    startFrame.grid_forget()
-    mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    startFrame.grid_remove()
+    mainFrame.grid()
     variables['gamemode'] = 1
     for i in peripherals:
         peripheralThreads.append(receiveCommand(i))
@@ -147,8 +147,10 @@ startFrame.columnconfigure(0, weight=1)
 startFrame.rowconfigure(0, weight=1)
 
 mainFrame = ttk.Frame(root, padding="3 3 3 3")
+mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
 mainFrame.columnconfigure(0, weight=1)
 mainFrame.rowconfigure(0, weight=1)
+mainFrame.grid_forget()
 
 start_status = StringVar()
 
