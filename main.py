@@ -25,7 +25,7 @@ variables['contestants'] = {'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt'
 variables['money'] = [0, 50,100,200,300,400,500,1000,2500,5000]
 variables['crtContestant'] = -1
 variables['gamemode'] = 0
-#0 = starting, 1 = questions, 2 = voting, 3 = final
+#0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
 questions = []
 status = []
 questions = []
@@ -238,11 +238,14 @@ def questionHandler(event):
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= len(variables['contestants']):
                     status.append(list(variables['contestants'].keys())[receivedCommand - 1] + ' you are the Weakest Link! Goodbye')
                     variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
+                    variables['gamemode'] = 3
+                    updateClient()
                     break
                 receivedCommand = ''
-                variables['gamemode'] = 1
+        variables['gamemode'] = 1
     receivedCommand = ''
     status_update()
+    updateClient()
     return True
 
 def importQuestions(file):
