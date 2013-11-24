@@ -126,7 +126,7 @@ def initListner():
 
 def initTk():
     global displayStatus, root, startFrame, mainFrame, listner
-    print('Initiating GUI')
+    print('Initiating GUI...')
     
     window_title = config['Tk']['window_title']
     

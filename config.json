@@ -8,7 +8,7 @@
         "finalQ": "questions.csv"
     }, 
     "server": {
-        "bindPort": 1024, 
+        "bindPort": 1024,
         "bindAddress": "localhost"
     }
 }
