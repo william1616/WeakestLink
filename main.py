@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-import csv, socket, hashlib, threading, time, select, sys, json
+import csv, socket, hashlib, threading, time, select, sys, json, os
 
 variables = {}
 variables['cntQuestions'] = 0
@@ -18,9 +18,8 @@ status = []
 peripherals = []
 
 def initServer():
-    #server settings
-    bindAddress = 'localhost'
-    bindPort = 1024
+    bindAddress = config['server']['bindAddress']
+    bindPort = config['server']['bindPort']
 
     #bindAddresses.append(socket.gethostname())
     #bindAddresses.append(socket.gethostbyname(socket.gethostname()))
@@ -37,8 +36,8 @@ def initServer():
 
 def status_update():
     global displayStatus
-    #status settings
-    status_lines = 25
+    
+    status_lines = config['Tk']['status_lines']
     
     #rewrite this function to use less memory - delete old results
     i = 0
@@ -74,7 +73,7 @@ class serverListner (threading.Thread):
     def stopListner(self, join):
         if join and self.isAlive():
             self.join()
-            status.append('Terminated listner Thread')
+            status.append('Terminated Listner Thread')
         elif self.running and self.isAlive():
             self.running = False
             status.append('Stopped Listner')
@@ -127,8 +126,9 @@ def initListner():
 
 def initTk():
     global displayStatus, root, startFrame, mainFrame, listner
-    #Tk settings
-    window_title = 'The Weakest Link'
+    print('Initiating GUI')
+    
+    window_title = config['Tk']['window_title']
     
     root = Tk()
     root.title(window_title)
@@ -155,14 +155,17 @@ def initTk():
     ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
     ttk.Label(mainFrame, textvariable=displayStatus, width=100).grid(column=1, row=2, sticky=N)
 
+    print('GUI Initiated')
+
 def askQuestion():
-    global variables
-    #question settings
-    mainQ = 'questions.csv'
+    global variables, questions
+    
+    mainQ = config['questions']['mainQ']
     
     try:
         questions
     except:
+        print('Importing Questions')
         questions = importQuestions(mainQ)
     if variables['crtContestant'] < len(variables['contestants']) - 1:
         variables['crtContestant'] += 1
@@ -183,7 +186,7 @@ def askQuestion():
         status.append(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
         status_update()
         updateClient()
-                # return question, awnser
+        # return question, awnser
         return questions[variables['cntQuestions']][0], questions[variables['cntQuestions']][1]
     else:
         status.append('So this is Embarasing')
@@ -207,7 +210,6 @@ def questionHandler(event, question, awnser):
         status.append('£' + str(variables['bank']) + ' now in bank')
         variables['correct'] = 0
         status.append('You now have £' + str(variables['money'][variables['correct']]))
-        #variables['cntQuestions'] =- 1 double check if this is needed?
         status_update()
         updateClient()
         return False
@@ -263,8 +265,8 @@ def importQuestions(file):
                 cnt += 1
         status.append('Imported ' + str(cnt) + ' Questions')
         status_update()
-		# with statement automatically closes the csv file cleanly even in event of unexpected script termination
-		return questions
+        # with statement automatically closes the csv file cleanly even in event of unexpected script termination
+        return questions
 
 def updateClient():
     global variables, peripherals
@@ -276,7 +278,19 @@ def updateClient():
         bytesSent = clientsocket.send(jsonBytes)
         #bytesSent = clientsocket.send(check)
 
+def initConfig():
+    global config
+	
+    #config settings
+    fileName = 'config.json'
+	
+    print('Importing Config...')
+    with open(fileName) as configFile:
+            config = json.loads(configFile.read())
+    print('Config Imported')
+
 if __name__ == '__main__':
+    initConfig()
     initTk()
     initListner()
     root.mainloop()
