@@ -1,10 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-import socket
-import threading
-import select
-import json
-import time
+import socket, threading, select, json, time
 
 clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
