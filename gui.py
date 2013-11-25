@@ -1,20 +1,24 @@
+from tkinter import *
+from tkinter import ttk
 import pygame, sys, operator, select, socket, json
 from pygame.locals import *
 
-pygame.init()
+def initPygame():
+    global displaySurface, FPS, fpsClock, width, height, white, blue, black
+    pygame.init()
 
-FPS = 10
-fpsClock = pygame.time.Clock()
+    FPS = 10
+    fpsClock = pygame.time.Clock()
 
-width = 800
-height = 600
+    width = 800
+    height = 600
 
-displaySurface = pygame.display.set_mode((width, height), 0)
-pygame.display.set_caption("The Weakest Link")
+    displaySurface = pygame.display.set_mode((width, height), 0)
+    pygame.display.set_caption("The Weakest Link")
 
-white = pygame.Color(255, 255, 255)
-blue = pygame.Color(0, 100, 255)
-black = pygame.Color(0, 0, 0)
+    white = pygame.Color(255, 255, 255)
+    blue = pygame.Color(0, 100, 255)
+    black = pygame.Color(0, 0, 0)
 
 class placeholder():
     def __init__(self, surface, coordinates, text, font=None, textColour=None, active=False):
@@ -93,6 +97,7 @@ def draw(round, roundQuestion, question, correctIndex, money, bank):
     wrapText(displaySurface, (155, titleRect.bottom + 10, width - 165, height - (titleRect.height + 10)), question, mainFont, black)
 
 def gameLoop():
+    global clientsocket
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or event.type == KEYDOWN and event.dict['key'] == 27:
@@ -108,14 +113,36 @@ def gameLoop():
         pygame.display.update()
         fpsClock.tick(FPS)
 
+def start():
+    global root, address, clientsocket
+    try:
+        print('Attempting to connect to ' + address.get())
+        clientsocket.connect((address.get(),1024))
+    except:
+        print('Failed to connect to ' + address.get())
+        return
+    print('Succesfully connected to ' + address.get())
+    root.destroy()
+    initPygame()
+    gameLoop()
+
+def initTk():
+    global root, address
+    root = Tk()
+    root.title('The Weakest Link')
+    
+    startFrame = ttk.Frame(root, padding="3 3 3 3")
+    startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    startFrame.columnconfigure(0, weight=1)
+    startFrame.rowconfigure(0, weight=1)
+    
+    address = StringVar()
+    
+    ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
+    ttk.Button(startFrame, text="Exit", command=root.destroy).grid(column=2, row=2, sticky=N)
+    ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
+    ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
+
 clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-try:
-    print('Attempting to connect to lcoalhost')
-    clientsocket.connect(('localhost',1024))
-except:
-    print('Failed to connect to localhost')
-    pygame.quit()
-    sys.exit()
-
-gameLoop()
+initTk()
+root.mainloop()
