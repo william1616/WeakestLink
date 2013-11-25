@@ -51,14 +51,16 @@ def status_update():
     global voteFrame, mainFrame, status, question, cur_money, bank
     print('gamemode: ' + str(variables['gamemode']))
     if variables['gamemode'] == 0:
-		voteFrame.grid_remove()
+	voteFrame.grid_remove()
         status.set('Round ' + str(variables['cntRounds']) + ' starting')
+        mainFrame.grid()
     if variables['gamemode'] == 1:
-		voteFrame.grid_remove()
+	voteFrame.grid_remove()
         status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
         question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
         cur_money.set(list(variables['money'])[variables['correct']])
         bank.set(variables['bank'])
+        mainFrame.grid()
     elif variables['gamemode'] == 2:
         mainFrame.grid_remove()
         voteFrame.grid()
