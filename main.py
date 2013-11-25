@@ -39,14 +39,13 @@ def status_update():
     
     status_lines = config['Tk']['status_lines']
     
-    #rewrite this function to use less memory - delete old results
-    i = 0
+    while len(status) > status_lines:
+        status.pop(0)
+    
     displayStatus.set('')
-    while True:
-        if i == len(status): break
-        if i > len(status) - status_lines:
-            displayStatus.set(displayStatus.get()+status[i]+'\n')
-        i += 1
+    
+    for info in status:
+        displayStatus.set(displayStatus.get()+info+'\n')
 
 class serverListner (threading.Thread):
     def __init__(self):
@@ -280,10 +279,10 @@ def updateClient():
 
 def initConfig():
     global config
-	
+    
     #config settings
     fileName = 'config.json'
-	
+    
     print('Importing Config...')
     with open(fileName) as configFile:
             config = json.loads(configFile.read())
