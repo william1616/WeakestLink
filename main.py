@@ -89,25 +89,34 @@ class questionControl(threading.Thread):
         threading.Thread.__init__(self)
         self.newQuestion = False
     def run(self):
+		global peripherals
         while True:
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
             while not self.newQuestion:
-                receivedCommand = receiveCommand()
+                receivedCommand = receiveCommand(peripherals)
                 if receivedCommand != '' and isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
                     if questionHandler(receivedCommand, self.question, self.awnser) == True:
                         self.newQuestion = True
 
-def receiveCommand():
-    global peripherals, root, displayStatus, startFrame, mainFrame, listner
-    while True:
-        for clientsocket in peripherals:
-            readable, writable, err = select.select([clientsocket.fileno()], [], [], 0.1)
+def receiveCommand(socketList, loop=True):
+	messages = check = []
+    while loop:
+        for socket in socketList:
+            readable, writable, err = select.select([socket.fileno()], [], [], 0.1)
             if readable:
-                msg = clientsocket.recv(4096)
-                #check = self.clientsocket.recv(40).decode('UTF-8')
-                #assert(hashlib.sha1(msg).hexdigest() == check)
-                return json.loads(msg.decode('UTF-8'))
+				messages = clientsocket.recv(4096).split('|')
+				while messages.count('') > 0:
+					messages.remove('')
+				for i in range(0, len(messages)):
+					if i % 2 == 1:
+						check.append(messages.pop(i).decode('UTF-8'))
+				for i in range(0, len(messages)):
+					if hashlib.sha1(messages[i]) == check[i]:
+						messages.pop(i)
+						check.pop(i)
+						send(check, socket, False)
+						return json.loads(message[i].decode('UTF-8'))
 
 def start():
     global variables
@@ -195,7 +204,7 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event, question, awnser):
-    global variables
+    global variables, peripherals
     if event == 1:
         status.append('Correct')
         variables['correct'] += 1
@@ -237,7 +246,7 @@ def questionHandler(event, question, awnser):
         status_update()
         updateClient()
         while True:
-            receivedCommand = receiveCommand()
+            receivedCommand = receiveCommand(peripherals)
             if receivedCommand != '' and isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= len(variables['contestants']):
                 status.append(list(variables['contestants'].keys())[receivedCommand - 1] + ' you are the Weakest Link! Goodbye')
                 variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
@@ -269,13 +278,17 @@ def importQuestions(file):
 
 def updateClient():
     global variables, peripherals
-    jsonVariables = json.dumps(variables)
-    assert(variables == json.loads(jsonVariables))
-    jsonBytes = jsonVariables.encode('UTF-8')
-    check = hashlib.sha1(jsonBytes).hexdigest().encode('UTF-8')
-    for clientsocket in peripherals:
-        bytesSent = clientsocket.send(jsonBytes)
-        #bytesSent = clientsocket.send(check)
+    send(variables, peripherals)
+
+def send(msg, socketList, doCheck=True):
+	for socket in socketList:
+		msg = json.dumps(msg).encode('UTF-8')
+		check = json.dumps(hashlib.sha1(msg)).encode('UTF-8')
+		socket.send(b'|' + msg + b'|' + check + b'|')
+		while doCheck:
+			if receiveCommand([socket], False) == check:
+				break
+			socket.send(b'|' + msg + b'|' + check + b'|')
 
 def initConfig():
     global config
