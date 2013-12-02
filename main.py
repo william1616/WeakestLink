@@ -3,6 +3,7 @@ from tkinter import ttk
 import csv, socket, hashlib, threading, time, select, sys, json, os
 
 variables = {}
+variables['name'] = 'variables'
 variables['cntQuestions'] = 0
 variables['correct'] = 0
 variables['cntRounds'] = 1
@@ -16,8 +17,12 @@ variables['gamemode'] = 0
 #0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
 status = []
 peripherals = []
+messages = {}
+check = {}
+uID = 0
 
 def initServer():
+    global status
     bindAddress = config['server']['bindAddress']
     bindPort = config['server']['bindPort']
 
@@ -35,7 +40,7 @@ def initServer():
     return serversocket
 
 def status_update():
-    global displayStatus
+    global displayStatus, status
     
     status_lines = config['Tk']['status_lines']
     
@@ -52,7 +57,7 @@ class serverListner (threading.Thread):
         threading.Thread.__init__(self)
         self.running = self.end = False
     def run(self):
-        global peripherals
+        global peripherals, status
         serversocket = initServer()
         while not self.end:
             while self.running:
@@ -63,6 +68,7 @@ class serverListner (threading.Thread):
                     status_update()
                     peripherals.append(clientsocket)
     def startListner(self):
+        global status
         if not self.running:
             status.append('Started Listner')
             self.running = True
@@ -70,6 +76,7 @@ class serverListner (threading.Thread):
             status.append('Cannot start Listner - Listner is already Running!')
         status_update()
     def stopListner(self, join):
+        global status
         if join and self.isAlive():
             self.join()
             status.append('Terminated Listner Thread')
@@ -89,34 +96,42 @@ class questionControl(threading.Thread):
         threading.Thread.__init__(self)
         self.newQuestion = False
     def run(self):
-		global peripherals
+        global peripherals, messages, check
         while True:
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
             while not self.newQuestion:
-                receivedCommand = receiveCommand(peripherals)
-                if receivedCommand != '' and isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
-                    if questionHandler(receivedCommand, self.question, self.awnser) == True:
-                        self.newQuestion = True
+                receivedCommand, index = receiveCommand(peripherals)
+        if receivedCommand['name'] == 'control' and receivedCommand['signal'] != '' and isinstance(receivedCommand['signal'], int) and receivedCommand['signal'] > 0 and receivedCommand['signal'] <= 4:
+          if questionHandler(receivedCommand['signal'], self.question, self.awnser) == True:
+            self.newQuestion = True
+            messages.pop(index)
+            check.pop(index)
 
 def receiveCommand(socketList, loop=True):
-	messages = check = []
+    global messages, check, uID
+    received = []
     while loop:
         for socket in socketList:
             readable, writable, err = select.select([socket.fileno()], [], [], 0.1)
             if readable:
-				messages = clientsocket.recv(4096).split('|')
-				while messages.count('') > 0:
-					messages.remove('')
-				for i in range(0, len(messages)):
-					if i % 2 == 1:
-						check.append(messages.pop(i).decode('UTF-8'))
-				for i in range(0, len(messages)):
-					if hashlib.sha1(messages[i]) == check[i]:
-						messages.pop(i)
-						check.pop(i)
-						send(check, socket, False)
-						return json.loads(message[i].decode('UTF-8'))
+                received = clientsocket.recv(4096).split(b'|')
+                while received.count(b'') > 0:
+                  received.remove(b'')
+                for i in range(0, len(received)):
+                  if i % 2 == 0:
+                    messages[uID] = json.loads(received[i].decode('UTF-8'))
+                  if i % 2 == 1:
+                    check[uID] = json.loads(received[i].decode('UTF-8'))
+                  uID += 1
+        for key in list(messages.keys()):
+            print('the key is' + str(key))
+            if hashlib.sha1(messages[key]).hexdigest() == check[key]:
+                send({'name': 'check', 'check': check[key]}, socket, False)
+                return messages[key], key
+            else:
+                messages.pop(key)
+                check.pop(key)
 
 def start():
     global variables
@@ -166,7 +181,7 @@ def initTk():
     print('GUI Initiated')
 
 def askQuestion():
-    global variables, questions
+    global variables, questions, status
     
     mainQ = config['questions']['mainQ']
     
@@ -204,7 +219,7 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event, question, awnser):
-    global variables, peripherals
+    global variables, peripherals, messages, check, status
     if event == 1:
         status.append('Correct')
         variables['correct'] += 1
@@ -246,20 +261,22 @@ def questionHandler(event, question, awnser):
         status_update()
         updateClient()
         while True:
-            receivedCommand = receiveCommand(peripherals)
-            if receivedCommand != '' and isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= len(variables['contestants']):
-                status.append(list(variables['contestants'].keys())[receivedCommand - 1] + ' you are the Weakest Link! Goodbye')
-                variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
+            receivedCommand, index = receiveCommand(peripherals)
+            if receivedCommand['name'] == 'control' and receivedCommand['signal'] != '' and isinstance(receivedCommand['signal'], int) and receivedCommand['signal'] > 0 and receivedCommand['signal'] <= len(variables['contestants']):
+                status.append(list(variables['contestants'].keys())[receivedCommand['signal'] - 1] + ' you are the Weakest Link! Goodbye')
+                variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand['signal'] - 1])
                 variables['gamemode'] = 3
                 updateClient()
+                messages.pop(index)
+                check.pop(index)
                 break
         variables['gamemode'] = 1
-    receivedCommand = ''
     status_update()
     updateClient()
     return True
 
 def importQuestions(file):
+    global status
     status.append('Importing Questions...')
     status_update()
     questions = []
@@ -278,17 +295,26 @@ def importQuestions(file):
 
 def updateClient():
     global variables, peripherals
-    send(variables, peripherals)
+    for socket in peripherals:
+        send(variables, socket)
 
-def send(msg, socketList, doCheck=True):
-	for socket in socketList:
-		msg = json.dumps(msg).encode('UTF-8')
-		check = json.dumps(hashlib.sha1(msg)).encode('UTF-8')
-		socket.send(b'|' + msg + b'|' + check + b'|')
-		while doCheck:
-			if receiveCommand([socket], False) == check:
-				break
-			socket.send(b'|' + msg + b'|' + check + b'|')
+def send(msg, socket, doCheck=True):
+    global messages, check
+    msg = json.dumps(msg).encode('UTF-8')
+    check = json.dumps(hashlib.sha1(msg).hexdigest()).encode('UTF-8')
+    socket.send(b'|' + msg + b'|' + check + b'|')
+    while doCheck:
+        receivedCommand = receiveCommand([socket], False)
+        print(receivedCommand)
+        try:
+            if receivedCommand['name'] == 'check':
+                print('msg was a check')
+                if receivedCommand['check'] == check:
+                    messages.pop(index)
+                    check.pop(index)
+                    break
+        except:
+            socket.send(b'|' + msg + b'|' + check + b'|')
 
 def initConfig():
     global config
@@ -298,7 +324,7 @@ def initConfig():
     
     print('Importing Config...')
     with open(fileName) as configFile:
-            config = json.loads(configFile.read())
+        config = json.loads(configFile.read())
     print('Config Imported')
 
 if __name__ == '__main__':
