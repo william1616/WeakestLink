@@ -120,15 +120,19 @@ def receiveCommand(socketList, loop=True):
                   received.remove(b'')
                 for i in range(0, len(received)):
                   if i % 2 == 0:
-                    messages[uID] = json.loads(received[i].decode('UTF-8'))
-                  if i % 2 == 1:
+                    messages[uID] = received[i]
+                  elif i % 2 == 1:
                     check[uID] = json.loads(received[i].decode('UTF-8'))
-                  uID += 1
+                    uID += 1
+        print(messages)
+        print(check)
         for key in list(messages.keys()):
-            print('the key is' + str(key))
+            print(hashlib.sha1(messages[key]).hexdigest())
+            print(check[key])
             if hashlib.sha1(messages[key]).hexdigest() == check[key]:
-                send({'name': 'check', 'check': check[key]}, socket, False)
-                return messages[key], key
+                for socket in socketList:
+                    send({'name': 'check', 'check': check[key]}, socket, False)
+                return json.loads(messages[key].decode('UTF-8')), key
             else:
                 messages.pop(key)
                 check.pop(key)
@@ -301,20 +305,16 @@ def updateClient():
 def send(msg, socket, doCheck=True):
     global messages, check
     msg = json.dumps(msg).encode('UTF-8')
-    check = json.dumps(hashlib.sha1(msg).hexdigest()).encode('UTF-8')
-    socket.send(b'|' + msg + b'|' + check + b'|')
+    msgCheck = json.dumps(hashlib.sha1(msg).hexdigest()).encode('UTF-8')
+    socket.send(b'|' + msg + b'|' + msgCheck + b'|')
     while doCheck:
         receivedCommand = receiveCommand([socket], False)
+        print(socket)
         print(receivedCommand)
-        try:
-            if receivedCommand['name'] == 'check':
-                print('msg was a check')
-                if receivedCommand['check'] == check:
-                    messages.pop(index)
-                    check.pop(index)
-                    break
-        except:
-            socket.send(b'|' + msg + b'|' + check + b'|')
+        if receivedCommand and receivedCommand['name'] == 'check' and receivedCommand['check'] == msgCheck:
+            messages.pop(index)
+            check.pop(index)
+            socket.send(b'|' + msg + b'|' + msgCheck + b'|')
 
 def initConfig():
     global config

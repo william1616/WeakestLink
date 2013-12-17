@@ -19,13 +19,13 @@ def receiveCommand(socketList, loop=True):
                   if i % 2 == 1:
                     check[uID] = json.loads(received[i].decode('UTF-8'))
                   uID += 1
-    for key in list(messages.keys()):
-      if hashlib.sha1(messages[key]).hexdigest() == check[key]:
-        send({'name': 'check', 'check': check[key]}, socket, False)
-        return msg, key
-      else:
-        messages.pop(key)
-        check.pop(key)
+		for key in list(messages.keys()):
+		  if hashlib.sha1(messages[key]).hexdigest() == check[key]:
+			send({'name': 'check', 'check': check[key]}, socket, False)
+			return msg, key
+		  else:
+			messages.pop(key)
+			check.pop(key)
 
 def send(msg, socket, doCheck=True):
     msg = json.dumps(msg).encode('UTF-8')
