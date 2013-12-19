@@ -108,14 +108,15 @@ class questionControl(threading.Thread):
             messages.pop(index)
             check.pop(index)
 
-def receiveCommand(socketList, loop=True):
+def receiveCommand(socketList, waitForCommand=True):
     global messages, check, uID
     received = []
-    while loop:
+    first = True
+    while first or waitForCommand:
         for socket in socketList:
             readable, writable, err = select.select([socket.fileno()], [], [], 0.1)
             if readable:
-                received = clientsocket.recv(4096).split(b'|')
+                received = socket.recv(4096).split(b'|')
                 while received.count(b'') > 0:
                   received.remove(b'')
                 for i in range(0, len(received)):
@@ -124,18 +125,17 @@ def receiveCommand(socketList, loop=True):
                   elif i % 2 == 1:
                     check[uID] = json.loads(received[i].decode('UTF-8'))
                     uID += 1
-        print(messages)
-        print(check)
         for key in list(messages.keys()):
-            print(hashlib.sha1(messages[key]).hexdigest())
-            print(check[key])
             if hashlib.sha1(messages[key]).hexdigest() == check[key]:
-                for socket in socketList:
-                    send({'name': 'check', 'check': check[key]}, socket, False)
+                msg = json.loads(messages[key].decode('UTF-8'))
+                if msg['name'] != 'check':
+                    for socket in socketList:
+                        send({'name': 'check', 'check': check[key]}, socket, False)
                 return json.loads(messages[key].decode('UTF-8')), key
             else:
                 messages.pop(key)
                 check.pop(key)
+        first = False
 
 def start():
     global variables
@@ -305,16 +305,16 @@ def updateClient():
 def send(msg, socket, doCheck=True):
     global messages, check
     msg = json.dumps(msg).encode('UTF-8')
-    msgCheck = json.dumps(hashlib.sha1(msg).hexdigest()).encode('UTF-8')
-    socket.send(b'|' + msg + b'|' + msgCheck + b'|')
+    msgCheck = hashlib.sha1(msg).hexdigest()
+    bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')
+    socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
     while doCheck:
-        receivedCommand = receiveCommand([socket], False)
-        print(socket)
-        print(receivedCommand)
+        receivedCommand, index = receiveCommand([socket], False)
         if receivedCommand and receivedCommand['name'] == 'check' and receivedCommand['check'] == msgCheck:
             messages.pop(index)
             check.pop(index)
-            socket.send(b'|' + msg + b'|' + msgCheck + b'|')
+            break
+        socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
 
 def initConfig():
     global config
