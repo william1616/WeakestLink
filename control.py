@@ -56,12 +56,14 @@ def receiveCommand(socketList, waitForCommand=True):
 
 def send(msg, socket, doCheck=True):
     global messages, check
+    print(msg)
     msg = json.dumps(msg).encode('UTF-8')
     msgCheck = hashlib.sha1(msg).hexdigest()
     bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')
     socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
     while doCheck:
         receivedCommand, index = receiveCommand([socket], False)
+        print(receivedCommand, index)
         if receivedCommand and receivedCommand['name'] == 'check' and receivedCommand['check'] == msgCheck:
             messages.pop(index)
             check.pop(index)

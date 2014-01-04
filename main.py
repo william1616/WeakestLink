@@ -64,6 +64,7 @@ class serverListner (threading.Thread):
                 readable, writable, err = select.select([serversocket.fileno()], [], [], 1)
                 if readable:
                     clientsocket, address = serversocket.accept()
+                    clientsocket.setblocking(True) 
                     status.append(address[0] + ' Succesfully Connected')
                     status_update()
                     peripherals.append(clientsocket)
@@ -102,21 +103,20 @@ class questionControl(threading.Thread):
             self.newQuestion = False
             while not self.newQuestion:
                 receivedCommand, index = receiveCommand(peripherals)
-        if receivedCommand['name'] == 'control' and receivedCommand['signal'] != '' and isinstance(receivedCommand['signal'], int) and receivedCommand['signal'] > 0 and receivedCommand['signal'] <= 4:
-          if questionHandler(receivedCommand['signal'], self.question, self.awnser) == True:
-            self.newQuestion = True
-            messages.pop(index)
-            check.pop(index)
+                if receivedCommand['name'] == 'control':
+                    messages.pop(index)
+                    check.pop(index)
+                    if questionHandler(receivedCommand['signal'], self.question, self.awnser) == True and receivedCommand['signal'] != '' and isinstance(receivedCommand['signal'], int) and receivedCommand['signal'] > 0 and receivedCommand['signal'] <= 4:
+                      self.newQuestion = True
 
 def receiveCommand(socketList, waitForCommand=True):
     global messages, check, uID
     received = []
-    first = True
-    while first or waitForCommand:
-        for socket in socketList:
-            readable, writable, err = select.select([socket.fileno()], [], [], 0.1)
+    while waitForCommand:
+        for socketObj in socketList:
+            readable, writable, err = select.select([socketObj.fileno()], [], [], 0.1)
             if readable:
-                received = socket.recv(4096).split(b'|')
+                received = socketObj.recv(4096).split(b'|')
                 while received.count(b'') > 0:
                   received.remove(b'')
                 for i in range(0, len(received)):
@@ -125,17 +125,20 @@ def receiveCommand(socketList, waitForCommand=True):
                   elif i % 2 == 1:
                     check[uID] = json.loads(received[i].decode('UTF-8'))
                     uID += 1
+        print('items currently in incoming msg stack:')
+        for item in messsages:
+            print(json.loads(item.decode('UTF-8')))
         for key in list(messages.keys()):
             if hashlib.sha1(messages[key]).hexdigest() == check[key]:
                 msg = json.loads(messages[key].decode('UTF-8'))
                 if msg['name'] != 'check':
-                    for socket in socketList:
-                        send({'name': 'check', 'check': check[key]}, socket, False)
+                    for socketObj in socketList:
+                        send({'name': 'check', 'check': check[key]}, socketObj, False)
                 return json.loads(messages[key].decode('UTF-8')), key
             else:
                 messages.pop(key)
                 check.pop(key)
-        first = False
+    return None, None
 
 def start():
     global variables
@@ -224,6 +227,7 @@ def askQuestion():
 
 def questionHandler(event, question, awnser):
     global variables, peripherals, messages, check, status
+    print(event)
     if event == 1:
         status.append('Correct')
         variables['correct'] += 1
@@ -299,22 +303,24 @@ def importQuestions(file):
 
 def updateClient():
     global variables, peripherals
-    for socket in peripherals:
-        send(variables, socket)
+    print('update client')
+    for socketObj in peripherals:
+        send(variables, socketObj)
 
-def send(msg, socket, doCheck=True):
+def send(msg, socketObj, doCheck=True):
     global messages, check
+    print(msg)
     msg = json.dumps(msg).encode('UTF-8')
     msgCheck = hashlib.sha1(msg).hexdigest()
-    bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')
-    socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
+    bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')    
+    socketObj.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
     while doCheck:
-        receivedCommand, index = receiveCommand([socket], False)
+        receivedCommand, index = receiveCommand([socketObj], False)
         if receivedCommand and receivedCommand['name'] == 'check' and receivedCommand['check'] == msgCheck:
             messages.pop(index)
             check.pop(index)
             break
-        socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
+        socketObj.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
 
 def initConfig():
     global config
