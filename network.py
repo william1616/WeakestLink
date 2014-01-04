@@ -1,7 +1,19 @@
-import socket, hashlib, select
+import socket, hashlib, select, json
 uID = 0
 messages = {}
 check = {}
+
+def initServerSocket(bindAddress, bindPort):
+    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serversocket.bind((bindAddress, bindPort))
+    serversocket.listen(5)
+    serversocket.setblocking(False)    
+    return serversocket
+	
+def initClientSocket(connectAddress, connectPort):
+	clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	clientsocket.connect((connectAddress, connectPort))
+	return clientsocket
 
 def receiveCommand(socketList, waitForCommand=True):
     global messages, check, uID
@@ -35,7 +47,7 @@ def receiveCommand(socketList, waitForCommand=True):
 def send(msg, socket, doCheck=True):
     global messages, check
     msg = json.dumps(msg).encode('UTF-8')
-	msgCheck = hashlib.sha1(msg).hexdigest()
+    msgCheck = hashlib.sha1(msg).hexdigest()
     bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')
     socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
     while doCheck:
@@ -45,4 +57,3 @@ def send(msg, socket, doCheck=True):
             check.pop(index)
             break
         socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
-			
