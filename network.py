@@ -78,9 +78,32 @@ def initServerSocket(bindAddress, bindPort):
     serversocket.setblocking(False)
     return serversocket
     
-def initClientSocket(connectAddress, connectPort):
+def serverListner(serversocket):
+    readable, writable, err = select.select([serversocket.fileno()], [], [], 1)
+    if readable:
+        clientsocket, address = serversocket.accept()
+        clientsocket.setblocking(True)
+        return clientsocket, address
+    return None, None
+
+def attemptConnect(socketObj, address, port):
+    try:
+        if debug:
+            with open('log.txt', 'a') as file:
+                file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Attempting to connect to ' + str(address) + ' on port ' + str(port) + '\n')
+        socketObj.connect((address, port))
+        if debug:
+            with open('log.txt', 'a') as file:
+                file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Successfully connected to ' + str(address) + ' on port ' + str(port) + '\n')
+        return True
+    except:
+        if debug:
+            with open('log.txt', 'a') as file:
+                file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Failed to connect to ' + str(address) + ' on port ' + str(port) + '\n')
+        return False
+
+def initClientSocket():
     clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    clientsocket.connect((connectAddress, connectPort))
     return clientsocket
         
 def localClient():
