@@ -1,9 +1,9 @@
 from tkinter import *
 from tkinter import ttk
-import csv, socket, hashlib, threading, time, select, sys, json, os
+import csv, threading, time, sys, json, os, network, datetime
 
+debug = True
 variables = {}
-variables['name'] = 'variables'
 variables['cntQuestions'] = 0
 variables['correct'] = 0
 variables['cntRounds'] = 1
@@ -17,32 +17,17 @@ variables['gamemode'] = 0
 #0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
 status = []
 peripherals = []
-messages = {}
-check = {}
-uID = 0
 
-def initServer():
-    global status
-    bindAddress = config['server']['bindAddress']
-    bindPort = config['server']['bindPort']
-
-    #bindAddresses.append(socket.gethostname())
-    #bindAddresses.append(socket.gethostbyname(socket.gethostname()))
-    
-    status.append('Server bound to ' + bindAddress)
-    status_update()
-    
-    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serversocket.bind((bindAddress, bindPort))
-    serversocket.listen(5)
-    serversocket.setblocking(False)
-    
-    return serversocket
-
-def status_update():
+def statusUpdate(info):
     global displayStatus, status
     
     status_lines = config['Tk']['status_lines']
+    
+    status.append(info)
+    
+    if debug:
+        with open('log.txt', 'a') as file:
+            file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] ' + info + '\n')
     
     while len(status) > status_lines:
         status.pop(0)
@@ -57,36 +42,31 @@ class serverListner (threading.Thread):
         threading.Thread.__init__(self)
         self.running = self.end = False
     def run(self):
-        global peripherals, status
-        serversocket = initServer()
+        global peripherals
+        serversocket = network.localServer()
         while not self.end:
             while self.running:
-                readable, writable, err = select.select([serversocket.fileno()], [], [], 1)
-                if readable:
-                    clientsocket, address = serversocket.accept()
-                    clientsocket.setblocking(True) 
-                    status.append(address[0] + ' Succesfully Connected')
-                    status_update()
-                    peripherals.append(clientsocket)
+                    clientsocket, address = network.serverListner(serversocket) 
+                    if clientsocket:
+                        peripherals.append(clientsocket)
+                        statusUpdate(address[0] + ' Succesfully Connected')
     def startListner(self):
         global status
         if not self.running:
-            status.append('Started Listner')
+            statusUpdate('Started Listner')
             self.running = True
         else:
-            status.append('Cannot start Listner - Listner is already Running!')
-        status_update()
+            statusUpdate('Cannot start Listner - Listner is already Running!')
     def stopListner(self, join):
         global status
         if join and self.isAlive():
             self.join()
-            status.append('Terminated Listner Thread')
+            statusUpdate('Terminated Listner Thread')
         elif self.running and self.isAlive():
             self.running = False
-            status.append('Stopped Listner')
+            statusUpdate('Stopped Listner')
         else:
-            status.append('Cannot stop Listner - Listner is not Running')
-        status_update()
+            statusUpdate('Cannot stop Listner - Listner is not Running')
     def join(self):
         self.end = True
         self.running = False
@@ -97,48 +77,14 @@ class questionControl(threading.Thread):
         threading.Thread.__init__(self)
         self.newQuestion = False
     def run(self):
-        global peripherals, messages, check
+        global peripherals
         while True:
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
             while not self.newQuestion:
-                receivedCommand, index = receiveCommand(peripherals)
-                if receivedCommand['name'] == 'control':
-                    messages.pop(index)
-                    check.pop(index)
-                    if questionHandler(receivedCommand['signal'], self.question, self.awnser) == True and receivedCommand['signal'] != '' and isinstance(receivedCommand['signal'], int) and receivedCommand['signal'] > 0 and receivedCommand['signal'] <= 4:
-                      self.newQuestion = True
-
-def receiveCommand(socketList, waitForCommand=True):
-    global messages, check, uID
-    received = []
-    while waitForCommand:
-        for socketObj in socketList:
-            readable, writable, err = select.select([socketObj.fileno()], [], [], 0.1)
-            if readable:
-                received = socketObj.recv(4096).split(b'|')
-                while received.count(b'') > 0:
-                  received.remove(b'')
-                for i in range(0, len(received)):
-                  if i % 2 == 0:
-                    messages[uID] = received[i]
-                  elif i % 2 == 1:
-                    check[uID] = json.loads(received[i].decode('UTF-8'))
-                    uID += 1
-        print('items currently in incoming msg stack:')
-        for item in messsages:
-            print(json.loads(item.decode('UTF-8')))
-        for key in list(messages.keys()):
-            if hashlib.sha1(messages[key]).hexdigest() == check[key]:
-                msg = json.loads(messages[key].decode('UTF-8'))
-                if msg['name'] != 'check':
-                    for socketObj in socketList:
-                        send({'name': 'check', 'check': check[key]}, socketObj, False)
-                return json.loads(messages[key].decode('UTF-8')), key
-            else:
-                messages.pop(key)
-                check.pop(key)
-    return None, None
+                receivedCommand = network.getMessageofType('cmd', peripherals)
+                if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
+                    self.newQuestion = True
 
 def start():
     global variables
@@ -205,88 +151,79 @@ def askQuestion():
         if variables['cntRquestions'] == 1:
             for i in list(variables['contestants'].keys()):
                 variables['contestants'][i] = 0
-            status.append('Round ' + str(variables['cntRounds']) + ' starting')
+            statusUpdate('Round ' + str(variables['cntRounds']) + ' starting')
             variables['gamemode'] = 0
-            status_update()
             updateClient()
             time.sleep(1)
         variables['gamemode'] = 1
-        status.append('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
+        statusUpdate('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
         variables['question'] = questions[variables['cntQuestions']][0]
-        status.append(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
-        status_update()
+        statusUpdate(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
         updateClient()
         # return question, awnser
         return questions[variables['cntQuestions']][0], questions[variables['cntQuestions']][1]
     else:
-        status.append('So this is Embarasing')
-        status.append('We seam to have run out of questions')
-        status.append('Exiting...')
-        status_update()
+        statusUpdate('So this is Embarasing')
+        statusUpdate('We seam to have run out of questions')
+        statusUpdate('Exiting...')
         sys.exit()
 
 def questionHandler(event, question, awnser):
-    global variables, peripherals, messages, check, status
+    global variables, peripherals, status
     print(event)
     if event == 1:
-        status.append('Correct')
+        statusUpdate('Correct')
         variables['correct'] += 1
         variables['contestants'][list(variables['contestants'].keys())[variables['crtContestant']]] += 1
     elif event == 2:
-        status.append('Incorrect - ' + awnser)
+        statusUpdate('Incorrect - ' + awnser)
         variables['correct'] = 0
     elif event == 3:
         variables['bank'] += variables['money'][variables['correct']]
-        status.append('Banked £' + str(variables['money'][variables['correct']]))
-        status.append('£' + str(variables['bank']) + ' now in bank')
+        statusUpdate('Banked £' + str(variables['money'][variables['correct']]))
+        statusUpdate('£' + str(variables['bank']) + ' now in bank')
         variables['correct'] = 0
-        status.append('You now have £' + str(variables['money'][variables['correct']]))
-        status_update()
+        statusUpdate('You now have £' + str(variables['money'][variables['correct']]))
         updateClient()
         return False
     elif event == 4:
-        status.append('Time Up')
-        status.append('You have £' + str(variables['bank']) + ' in the bank')
+        statusUpdate('Time Up')
+        statusUpdate('You have £' + str(variables['bank']) + ' in the bank')
         variables['cntRounds'] += 1
         variables['correct'] = variables['cntRquestions'] = 0
     event = ''
     variables['cntRquestions'] += 1
     variables['cntQuestions'] += 1
     if variables['correct'] == len(variables['money']) - 1:
-        status.append('You have got all questions in round ' + str(variables['cntRounds']) + ' correct')
-        status.append('You have £' + str(variables['bank']) + ' in the bank')
+        statusUpdate('You have got all questions in round ' + str(variables['cntRounds']) + ' correct')
+        statusUpdate('You have £' + str(variables['bank']) + ' in the bank')
         variables['cntRounds'] += 1
         variables['cntRquestions'] = 1
         variables['correct'] = 0
-    status.append('You now have £' + str(variables['money'][variables['correct']]))
+    statusUpdate('You now have £' + str(variables['money'][variables['correct']]))
     if variables['cntRquestions'] == 1:
         variables['gamemode'] = 2
-        status.append('You must now choose the Weakest Link')
+        statusUpdate('You must now choose the Weakest Link')
         i = 1
         while i - 1 < len(variables['contestants']):
-            status.append(str(i) + '\t' + list(variables['contestants'].keys())[i-1] + '\t' + str(list(variables['contestants'].values())[i-1]))
+            statusUpdate(str(i) + '\t' + list(variables['contestants'].keys())[i-1] + '\t' + str(list(variables['contestants'].values())[i-1]))
             i += 1
-        status_update()
         updateClient()
         while True:
-            receivedCommand, index = receiveCommand(peripherals)
-            if receivedCommand['name'] == 'control' and receivedCommand['signal'] != '' and isinstance(receivedCommand['signal'], int) and receivedCommand['signal'] > 0 and receivedCommand['signal'] <= len(variables['contestants']):
-                status.append(list(variables['contestants'].keys())[receivedCommand['signal'] - 1] + ' you are the Weakest Link! Goodbye')
-                variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand['signal'] - 1])
+            receivedCommand = network.getMessageofType('cmd', peripherals)
+            if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= len(variables['contestants']):
+                statusUpdate(list(variables['contestants'].keys())[receivedCommand - 1] + ' you are the Weakest Link! Goodbye')
+                variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
                 variables['gamemode'] = 3
                 updateClient()
-                messages.pop(index)
-                check.pop(index)
                 break
         variables['gamemode'] = 1
-    status_update()
     updateClient()
     return True
 
 def importQuestions(file):
     global status
-    status.append('Importing Questions...')
-    status_update()
+    statusUpdate('Importing Questions...')
     questions = []
     cnt = 0
     with open(file) as csvfile: # add search directory for csv
@@ -296,31 +233,18 @@ def importQuestions(file):
             if row[0] and row[1]:
                 questions.append([row[0], row[1]])
                 cnt += 1
-        status.append('Imported ' + str(cnt) + ' Questions')
-        status_update()
+        statusUpdate('Imported ' + str(cnt) + ' Questions')
         # with statement automatically closes the csv file cleanly even in event of unexpected script termination
         return questions
 
 def updateClient():
     global variables, peripherals
-    print('update client')
+    try:
+        statusUpdate('Update Client')
+    except:
+        print('Update Client')
     for socketObj in peripherals:
-        send(variables, socketObj)
-
-def send(msg, socketObj, doCheck=True):
-    global messages, check
-    print(msg)
-    msg = json.dumps(msg).encode('UTF-8')
-    msgCheck = hashlib.sha1(msg).hexdigest()
-    bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')    
-    socketObj.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
-    while doCheck:
-        receivedCommand, index = receiveCommand([socketObj], False)
-        if receivedCommand and receivedCommand['name'] == 'check' and receivedCommand['check'] == msgCheck:
-            messages.pop(index)
-            check.pop(index)
-            break
-        socketObj.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
+        network.sendMessage('variables', variables, socketObj)
 
 def initConfig():
     global config
