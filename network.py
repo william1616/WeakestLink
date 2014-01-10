@@ -1,8 +1,13 @@
-import socket, hashlib, select, json, os, datetime
+import socket, hashlib, select, json, os, datetime, __main__
 debug = True
 uID = 1
 messages = {}
 check = {}
+
+if __main__.__file__:
+    fileName = os.path.basename(__main__.__file__) + ' via ' + os.path.basename(__file__)
+else:
+    fileName = os.path.basename(__file__)
 
 def getMessage(socketList, waitForMessage=True): #this function should not be called use getMessageofType() instead
     global messages, check, uID
@@ -20,7 +25,7 @@ def getMessage(socketList, waitForMessage=True): #this function should not be ca
                     messages[uID] = received[i]
                     if debug:
                         with open('log.txt', 'a') as file:
-                            file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Received the following Message: '+ str(received[i]) + '\n')
+                            file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Received the following Message: '+ str(received[i]) + '\n')
                   elif i % 2 == 1:
                     check[uID] = json.loads(received[i].decode('UTF-8'))
                     uID += 1
@@ -61,7 +66,7 @@ def sendMessage(type, content, socketObj, doCheck=True):
     socketObj.send(bytesMsg)
     if debug:
         with open('log.txt', 'a') as file:
-            file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Sent the following Message: '+ str(bytesMsg) + '\n')
+            file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Sent the following Message: '+ str(bytesMsg) + '\n')
     while doCheck:
         receivedCheck = getMessageofType('check', [socketObj], False)
         if receivedCheck == msgCheck:
@@ -69,7 +74,7 @@ def sendMessage(type, content, socketObj, doCheck=True):
         socketObj.send(bytesMsg) #fails after a large number of attempts at sending the data
         if debug:
             with open('log.txt', 'a') as file:
-                file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Sent the following Message: '+ str(bytesMsg) + '\n')
+                file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Sent the following Message: '+ str(bytesMsg) + '\n')
 
 def initServerSocket(bindAddress, bindPort):
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -90,16 +95,16 @@ def attemptConnect(socketObj, address, port):
     try:
         if debug:
             with open('log.txt', 'a') as file:
-                file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Attempting to connect to ' + str(address) + ' on port ' + str(port) + '\n')
+                file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Attempting to connect to ' + str(address) + ' on port ' + str(port) + '\n')
         socketObj.connect((address, port))
         if debug:
             with open('log.txt', 'a') as file:
-                file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Successfully connected to ' + str(address) + ' on port ' + str(port) + '\n')
+                file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Successfully connected to ' + str(address) + ' on port ' + str(port) + '\n')
         return True
     except:
         if debug:
             with open('log.txt', 'a') as file:
-                file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] Failed to connect to ' + str(address) + ' on port ' + str(port) + '\n')
+                file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Failed to connect to ' + str(address) + ' on port ' + str(port) + '\n')
         return False
 
 def initClientSocket():
