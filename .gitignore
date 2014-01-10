@@ -36,3 +36,6 @@ nosetests.xml
 
 # question files
 *.csv
+
+# Log files
+log*
