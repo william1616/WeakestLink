@@ -1,93 +1,36 @@
 from tkinter import *
 from tkinter import ttk
-import socket, threading, select, json, time, hashlib
+import threading, time, network, datetime
 
-clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-uID = 0
-messages = {}
-check = {}
+socket = network.initClientSocket()
 
 class listner(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.end = False
     def run(self):
-        global variables, clientsocket, messages, check
+        global variables
         while True:
-            temp, index = receiveCommand([clientsocket])
-            if temp['name'] == 'variables':
-                    variables = temp
-                    messages.pop(index)
-                    check.pop(index)
-                    status_update()
+            variables = network.getMessageofType('variables', [socket])
+            status_update()
             if self.end == True:
                 break
     def join(self):
             self.end = True
 
-def receiveCommand(socketList, waitForCommand=True):
-    global messages, check, uID
-    received = []
-    first = True
-    while first or waitForCommand:
-        for socket in socketList:
-            readable, writable, err = select.select([socket.fileno()], [], [], 0.1)
-            if readable:
-                received = socket.recv(4096).split(b'|')
-                while received.count(b'') > 0:
-                  received.remove(b'')
-                for i in range(0, len(received)):
-                  if i % 2 == 0:
-                    messages[uID] = received[i]
-                  elif i % 2 == 1:
-                    check[uID] = json.loads(received[i].decode('UTF-8'))
-                    uID += 1
-        for key in list(messages.keys()):
-            if hashlib.sha1(messages[key]).hexdigest() == check[key]:
-                msg = json.loads(messages[key].decode('UTF-8'))
-                if msg['name'] != 'check':
-                    for socket in socketList:
-                        send({'name': 'check', 'check': check[key]}, socket, False)
-                return json.loads(messages[key].decode('UTF-8')), key
-            else:
-                messages.pop(key)
-                check.pop(key)
-        first = False
-
-def send(msg, socket, doCheck=True):
-    global messages, check
-    print(msg)
-    msg = json.dumps(msg).encode('UTF-8')
-    msgCheck = hashlib.sha1(msg).hexdigest()
-    bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')
-    socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
-    while doCheck:
-        receivedCommand, index = receiveCommand([socket], False)
-        print(receivedCommand, index)
-        if receivedCommand and receivedCommand['name'] == 'check' and receivedCommand['check'] == msgCheck:
-            messages.pop(index)
-            check.pop(index)
-            break
-        socket.send(b'|' + msg + b'|' + bytesMsgCheck + b'|')
-
 def start():
-    global clientsocket, voteFrame, mainFrame
-    try:
-        print('Attempting to connect to ' + address.get())
-        clientsocket.connect((address.get(),1024))
-    except:
-        print('Failed to connect to ' + address.get())
-        return
-    receive = listner()
-    receive.start()
-    startFrame.grid_remove()
-    mainFrame.grid()
+    global socket, voteFrame, mainFrame
+    if network.attemptConnect(socket, address.get(), 1024):
+        receive = listner()
+        receive.start()
+        startFrame.grid_remove()
+        mainFrame.grid()
 
 def removeContestant(contestantIndex):
-    global voteFrame, mainFrame, clientsocket
+    global voteFrame, mainFrame, socket
     voteFrame.grid_remove()
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
-    send({'name': 'control', 'signal': contestantIndex}, clientsocket)
+    network.sendMessage('cmd', contestantIndex, socket)
   
 def status_update():
     global voteFrame, mainFrame, status, question, cur_money, bank
@@ -96,7 +39,7 @@ def status_update():
         voteFrame.grid_remove()
         status.set('Round ' + str(variables['cntRounds']) + ' starting')
         mainFrame.grid()
-    if variables['gamemode'] == 1:
+    elif variables['gamemode'] == 1:
         voteFrame.grid_remove()
         status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
         question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
@@ -142,10 +85,10 @@ ttk.Label(mainFrame, text='Money: ').grid(column=4, row=1, sticky=N)
 ttk.Label(mainFrame, text='Bank: ').grid(column=4, row=2, sticky=N)
 ttk.Label(mainFrame, textvariable=cur_money).grid(column=5, row=1, sticky=N)
 ttk.Label(mainFrame, textvariable=bank).grid(column=5, row=2, sticky=N)
-ttk.Button(mainFrame, text="Correct", command=lambda: send({'name': 'control', 'signal': 1}, clientsocket)).grid(column=2, row=1, sticky=N)
-ttk.Button(mainFrame, text="Incorrect", command=lambda: send({'name': 'control', 'signal': 2}, clientsocket)).grid(column=2, row=2, sticky=N)
-ttk.Button(mainFrame, text="Bank", command=lambda: send({'name': 'control', 'signal': 3}, clientsocket)).grid(column=3, row=2, sticky=N)
-ttk.Button(mainFrame, text="Time Up", command=lambda: send({'name': 'control', 'signal': 4}, clientsocket)).grid(column=3, row=1, sticky=N)
+ttk.Button(mainFrame, text="Correct", command=lambda: network.sendMessage('cmd', 1, socket)).grid(column=2, row=1, sticky=N)
+ttk.Button(mainFrame, text="Incorrect", command=lambda: network.sendMessage('cmd', 2, socket)).grid(column=2, row=2, sticky=N)
+ttk.Button(mainFrame, text="Bank", command=lambda: network.sendMessage('cmd', 3, socket)).grid(column=3, row=2, sticky=N)
+ttk.Button(mainFrame, text="Time Up", command=lambda: network.sendMessage('cmd', 4, socket)).grid(column=3, row=1, sticky=N)
 
 voteFrame = ttk.Frame(root, padding="3 3 3 3")
 voteFrame.grid(column=0, row=0, sticky=(N, W, E, S))
