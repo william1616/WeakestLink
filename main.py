@@ -25,9 +25,7 @@ def statusUpdate(info):
     
     status.append(info)
     
-    if debug:
-        with open('log.txt', 'a') as file:
-            file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] ' + info + '\n')
+    log(info)
     
     while len(status) > status_lines:
         status.pop(0)
@@ -36,6 +34,11 @@ def statusUpdate(info):
     
     for info in status:
         displayStatus.set(displayStatus.get()+info+'\n')
+
+def log(text):
+	if debug:
+		with open('log.txt', 'a') as file:
+			file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] ' + text + '\n')	
 
 class serverListner (threading.Thread):
     def __init__(self):
@@ -170,7 +173,6 @@ def askQuestion():
 
 def questionHandler(event, question, awnser):
     global variables, peripherals, status
-    print(event)
     if event == 1:
         statusUpdate('Correct')
         variables['correct'] += 1
@@ -240,7 +242,7 @@ def importQuestions(file):
 def updateClient():
     global variables, peripherals
     try:
-        statusUpdate('Update Client')
+        log('Update Client')
     except:
         print('Update Client')
     for socketObj in peripherals:
