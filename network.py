@@ -3,7 +3,6 @@ debug = True
 uID = 1
 messages = {}
 check = {}
-sender = {}
 
 if __main__.__file__:
     fileName = os.path.basename(__main__.__file__) + ' via ' + os.path.basename(__file__)
@@ -29,18 +28,14 @@ def getMessage(socketList, waitForMessage=True): #this function should not be ca
                             file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Received the following Message: '+ str(received[i]) + '\n')
                   elif i % 2 == 1:
                     check[uID] = json.loads(received[i].decode('UTF-8'))
-					sender[uID] = socketObj
                     uID += 1
         for key in list(messages.keys()):
             if hashlib.sha1(messages[key]).hexdigest() == check[key]:
                 msg = json.loads(messages[key].decode('UTF-8'))
-                if msg['type'] != 'check':
-					sendMessage('check', check[key], sender[key], False)
                 return msg['type'], key
             else:
                 messages.pop(key)
                 check.pop(key)
-				sender.pop(key)
         first = False
     return None, None
         
@@ -48,7 +43,6 @@ def getMessagefromStack(key): #this function should not be called use getMessage
     temp = json.loads(json.loads(messages[key].decode('UTF-8'))['content'])
     messages.pop(key)
     check.pop(key)
-	sender.pop(key)
     return temp #temp deleted when function returns as local
     
 def getMessageofType(type, socketList, waitForMessage=True):
@@ -60,7 +54,7 @@ def getMessageofType(type, socketList, waitForMessage=True):
     else:
         return None
 
-def sendMessage(type, content, socketObj, doCheck=True):
+def sendMessage(type, content, socketObj):
     global messages, check
     msg = json.dumps({'type': type, 'content': json.dumps(content)}).encode('UTF-8')
     msgCheck = hashlib.sha1(msg).hexdigest()
@@ -70,28 +64,17 @@ def sendMessage(type, content, socketObj, doCheck=True):
     if debug:
         with open('log.txt', 'a') as file:
             file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Sent the following Message: '+ str(bytesMsg) + '\n')
-    while doCheck:
-		time.sleep(0.1)
-        receivedCheck = getMessageofType('check', [socketObj], False)
-        if receivedCheck == msgCheck:
-            break
-        socketObj.send(bytesMsg) #fails after a large number of attempts at sending the data
-        if debug:
-            with open('log.txt', 'a') as file:
-                file.write(str(datetime.datetime.now()) + ' [' + fileName + '] Sent the following Message: '+ str(bytesMsg) + '\n')
 
 def initServerSocket(bindAddress, bindPort):
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.bind((bindAddress, bindPort))
     serversocket.listen(5)
-    serversocket.setblocking(False)
     return serversocket
     
 def serverListner(serversocket):
     readable, writable, err = select.select([serversocket.fileno()], [], [], 1)
     if readable:
         clientsocket, address = serversocket.accept()
-        clientsocket.setblocking(True)
         return clientsocket, address
     return None, None
 
