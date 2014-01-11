@@ -36,9 +36,9 @@ def statusUpdate(info):
         displayStatus.set(displayStatus.get()+info+'\n')
 
 def log(text):
-	if debug:
-		with open('log.txt', 'a') as file:
-			file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] ' + text + '\n')	
+    if debug:
+        with open('log.txt', 'a') as file:
+            file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] ' + text + '\n')   
 
 class serverListner (threading.Thread):
     def __init__(self):
