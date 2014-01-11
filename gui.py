@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-import pygame, sys, operator, select, socket, json
+import pygame, sys, operator, network
 from pygame.locals import *
 
 def initPygame():
@@ -97,34 +97,25 @@ def draw(round, roundQuestion, question, correctIndex, money, bank):
     wrapText(displaySurface, (155, titleRect.bottom + 10, width - 165, height - (titleRect.height + 10)), question, mainFont, black)
 
 def gameLoop():
-    global clientsocket
+    global socket
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or event.type == KEYDOWN and event.dict['key'] == 27:
                 pygame.quit()
                 sys.exit()
-        readable, writable, err = select.select([clientsocket.fileno()], [], [], 0.1)
-        if readable:
-            msg = clientsocket.recv(4096)
-            #check = self.clientsocket.recv(40).decode('UTF-8')
-            #assert(hashlib.sha1(msg).hexdigest() == check)
-            variables = json.loads(msg.decode('UTF-8'))
+        variables = network.getMessageofType('variables', [socket], False)
+        if variables:
+            print(variables)
             draw(variables['cntRounds'], variables['cntRquestions'], variables['question'], variables['correct'], variables['money'], variables['bank'])
         pygame.display.update()
         fpsClock.tick(FPS)
 
 def start():
-    global root, address, clientsocket
-    try:
-        print('Attempting to connect to ' + address.get())
-        clientsocket.connect((address.get(),1024))
-    except:
-        print('Failed to connect to ' + address.get())
-        return
-    print('Succesfully connected to ' + address.get())
-    root.destroy()
-    initPygame()
-    gameLoop()
+    global root, address, socket
+    if network.attemptConnect(socket, address.get(), 1024):
+        root.destroy()
+        initPygame()
+        gameLoop()
 
 def initTk():
     global root, address
@@ -137,12 +128,13 @@ def initTk():
     startFrame.rowconfigure(0, weight=1)
     
     address = StringVar()
+    address.set('localhost')
     
     ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
     ttk.Button(startFrame, text="Exit", command=root.destroy).grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
 
-clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+socket = network.initClientSocket()
 initTk()
 root.mainloop()
