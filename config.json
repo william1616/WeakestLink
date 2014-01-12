@@ -11,4 +11,7 @@
         "bindPort": 1024,
         "bindAddress": "localhost"
     }
+	"debug": {
+		"log": True
+	}
 }

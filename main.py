@@ -3,7 +3,6 @@ from tkinter import ttk
 from collections import OrderedDict
 import csv, threading, time, sys, json, os, network, datetime
 
-debug = True
 variables = {
 	'cntQuestions': 0, #row counter for csv file
 	'correct': 0, #correct counter per round
@@ -37,7 +36,7 @@ def statusUpdate(info):
         displayStatus.set(displayStatus.get()+info+'\n')
 
 def log(text):
-    if debug:
+    if config['debug']['log']:
         with open('log.txt', 'a') as file:
             file.write(str(datetime.datetime.now()) + ' [' + '' + '] ' + text + '\n')   
 
