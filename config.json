@@ -12,6 +12,6 @@
         "bindAddress": "localhost"
     },
     "debug": {
-	"log": True
+	"log": true
     }
 }
