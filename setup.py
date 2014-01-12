@@ -26,7 +26,7 @@ with open('build\\buildData.json', 'w') as file:
 # Dependencies are automatically detected, but it might need
 # fine tuning.
 buildOptions = dict(packages = ['csv', 'threading', 'time', 'sys', 'json', 'os', 'network', 'datetime'], 
-	excludes = ['tk', 'tcl'], 
+	excludes = [], 
 	path = sys.path, 
 	include_files = [('config.json',''), 
 	('questions.csv','')],

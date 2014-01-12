@@ -3,7 +3,6 @@ from tkinter import ttk
 import threading, time, network, datetime
 
 socket = network.initClientSocket()
-mainLoop = True
 
 class listner(threading.Thread):
     def __init__(self):
@@ -112,6 +111,7 @@ def initTk():
     ttk.Button(voteFrame, textvariable=vote8name, command=lambda: removeContestant(8)).grid(column=4, row=2, sticky=N)
     
 if __name__ == '__main__':
+	mainLoop = True
     initTk()
     startFrame.grid()
     while True:
