@@ -1,10 +1,10 @@
 from cx_Freeze import setup, Executable
-import sys, datetime, json
+import sys, datetime, json, collections
 
 with open('build\\buildData.json', 'r') as file:
-	buildData = json.loads(file.read())
+	buildData = json.load(file)
 
-if input('Release Build [n]: '):
+if input('Release Build [n]: ') == 'y':
 	temp = input('Version: [' + buildData['version'] + ']: ')
 	if temp: buildData['version'] = temp
 	versionName = 'Build ' + str(buildData['buildNo']) + ' [' + buildData['version'] + ']'
@@ -21,7 +21,7 @@ else:
 buildData['buildNo'] += 1
 
 with open('build\\buildData.json', 'w') as file:
-	file.write(json.dumps(buildData, indent=4))
+	json.dump(buildData, file, indent=4)
 	
 # Dependencies are automatically detected, but it might need
 # fine tuning.
