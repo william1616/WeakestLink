@@ -10,8 +10,8 @@
     "server": {
         "bindPort": 1024,
         "bindAddress": "localhost"
+    },
+    "debug": {
+	"log": True
     }
-	"debug": {
-		"log": True
-	}
 }
