@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-import threading, time, network, datetime
+import threading, time, network, datetime, math
 
 socket = network.initClientSocket()
 
@@ -9,10 +9,10 @@ class listner(threading.Thread):
         threading.Thread.__init__(self)
         self.end = False
     def run(self):
-        global variables
+        global variables, root
         while True:
             variables = network.getMessageofType('variables', [socket])
-            status_update()
+            root.quit()
             if self.end == True:
                 break
     def join(self):
@@ -31,13 +31,9 @@ def removeContestant(contestantIndex):
     voteFrame.grid_remove()
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     network.sendMessage('cmd', contestantIndex, socket)
-  
-def status_update():
-    global root
-    root.quit()
 
 def initTk():
-    global root, startFrame, address, mainFrame, question, status, cur_money, bank, voteFrame, vote1name, vote2name, vote3name, vote4name, vote5name, vote6name, vote7name, vote8name
+    global root, startFrame, address, mainFrame, question, status, cur_money, bank, voteFrame, voteVar, voteButton
     root = Tk()
     root.title("Control")
 
@@ -82,36 +78,17 @@ def initTk():
     voteFrame.columnconfigure(0, weight=1)
     voteFrame.rowconfigure(0, weight=1)
     voteFrame.grid_remove()
-
-    vote1name = StringVar()
-    vote2name = StringVar()
-    vote3name = StringVar()
-    vote4name = StringVar()
-    vote5name = StringVar()
-    vote6name = StringVar()
-    vote7name = StringVar()
-    vote8name = StringVar()
-
-    vote1name.set('')
-    vote2name.set('')
-    vote3name.set('')
-    vote4name.set('')
-    vote5name.set('')
-    vote6name.set('')
-    vote7name.set('')
-    vote8name.set('')
-
-    ttk.Button(voteFrame, textvariable=vote1name, command=lambda: removeContestant(1)).grid(column=1, row=1, sticky=N)
-    ttk.Button(voteFrame, textvariable=vote2name, command=lambda: removeContestant(2)).grid(column=2, row=1, sticky=N)
-    ttk.Button(voteFrame, textvariable=vote3name, command=lambda: removeContestant(3)).grid(column=3, row=1, sticky=N)
-    ttk.Button(voteFrame, textvariable=vote4name, command=lambda: removeContestant(4)).grid(column=4, row=1, sticky=N)
-    ttk.Button(voteFrame, textvariable=vote5name, command=lambda: removeContestant(5)).grid(column=1, row=2, sticky=N)
-    ttk.Button(voteFrame, textvariable=vote6name, command=lambda: removeContestant(6)).grid(column=2, row=2, sticky=N)
-    ttk.Button(voteFrame, textvariable=vote7name, command=lambda: removeContestant(7)).grid(column=3, row=2, sticky=N)
-    ttk.Button(voteFrame, textvariable=vote8name, command=lambda: removeContestant(8)).grid(column=4, row=2, sticky=N)
+    
+    voteVar = []
+    voteButton = []
+    
+    for i in range(0, 8):
+        voteVar.append(StringVar())
+        voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda: removeContestant(i + 1)))
+        voteButton[i].grid(column=i % 4, row=math.ceil((1 + i) / 4), sticky=N)
     
 if __name__ == '__main__':
-	mainLoop = True
+    mainLoop = True
     initTk()
     startFrame.grid()
     while True:
@@ -130,6 +107,13 @@ if __name__ == '__main__':
                 mainFrame.grid()
             elif variables['gamemode'] == 2:
                 mainFrame.grid_remove()
+                contestantList = list(variables['contestants'].keys())
+                for i in range(0, 8):
+                    try:
+                        voteVar[i].set(contestantList[i])
+                    except IndexError:
+                        voteButton[i].grid_forget()
+                    
                 voteFrame.grid()
         except:
             pass
