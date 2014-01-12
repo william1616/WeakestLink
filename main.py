@@ -1,22 +1,23 @@
 from tkinter import *
 from tkinter import ttk
+from collections import OrderedDict
 import csv, threading, time, sys, json, os, network, datetime
 
 debug = True
-variables = {}
-variables['cntQuestions'] = 0
-variables['correct'] = 0
-variables['cntRounds'] = 1
-variables['cntRquestions'] = 1
-variables['bank'] = 0
-variables['question'] = ''
-variables['contestants'] = {'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}
-variables['money'] = [0, 50,100,200,300,400,500,1000,2500,5000]
-variables['crtContestant'] = -1
-variables['gamemode'] = 0
-#0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
+variables = {
+	'cntQuestions': 0, #row counter for csv file
+	'correct': 0, #correct counter per round
+	'cntRounds': 1,
+	'cntRquestions': 1, #question counter per round
+	'bank': 0,
+	'question': '',
+	'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
+	'money': [0, 50,100,200,300,400,500,1000,2500,5000],
+	'crtContestant': -1, #current contestant key index
+	'gamemode': 0, #0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
+	}
 status = []
-peripherals = []
+socketList = []
 
 def statusUpdate(info):
     global displayStatus, status
@@ -38,20 +39,20 @@ def statusUpdate(info):
 def log(text):
     if debug:
         with open('log.txt', 'a') as file:
-            file.write(str(datetime.datetime.now()) + ' [' + os.path.basename(__file__) + '] ' + text + '\n')   
+            file.write(str(datetime.datetime.now()) + ' [' + '' + '] ' + text + '\n')   
 
 class serverListner (threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.running = self.end = False
     def run(self):
-        global peripherals
+        global socketList
         serversocket = network.localServer()
         while not self.end:
             while self.running:
                     clientsocket, address = network.serverListner(serversocket) 
                     if clientsocket:
-                        peripherals.append(clientsocket)
+                        socketList.append(clientsocket)
                         statusUpdate(address[0] + ' Succesfully Connected')
     def startListner(self):
         global status
@@ -80,12 +81,12 @@ class questionControl(threading.Thread):
         threading.Thread.__init__(self)
         self.newQuestion = False
     def run(self):
-        global peripherals
+        global socketList
         while True:
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
             while not self.newQuestion:
-                receivedCommand = network.getMessageofType('cmd', peripherals)
+                receivedCommand = network.getMessageofType('cmd', socketList)
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
                     self.newQuestion = True
 
@@ -172,7 +173,7 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event, question, awnser):
-    global variables, peripherals, status
+    global variables, socketList, status
     if event == 1:
         statusUpdate('Correct')
         variables['correct'] += 1
@@ -212,7 +213,7 @@ def questionHandler(event, question, awnser):
             i += 1
         updateClient()
         while True:
-            receivedCommand = network.getMessageofType('cmd', peripherals)
+            receivedCommand = network.getMessageofType('cmd', socketList)
             if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= len(variables['contestants']):
                 statusUpdate(list(variables['contestants'].keys())[receivedCommand - 1] + ' you are the Weakest Link! Goodbye')
                 variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
@@ -240,12 +241,12 @@ def importQuestions(file):
         return questions
 
 def updateClient():
-    global variables, peripherals
+    global variables, socketList
     try:
         log('Update Client')
     except:
         print('Update Client')
-    for socketObj in peripherals:
+    for socketObj in socketList:
         network.sendMessage('variables', variables, socketObj)
 
 def initConfig():

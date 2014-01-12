@@ -1,13 +1,16 @@
 import socket, hashlib, select, json, os, datetime, __main__, time
+from collections import OrderedDict
 debug = True
 uID = 1
 messages = {}
 check = {}
 
-if __main__.__file__:
-    fileName = os.path.basename(__main__.__file__) + ' via ' + os.path.basename(__file__)
-else:
-    fileName = os.path.basename(__file__)
+# if __main__.__file__:
+    # fileName = os.path.basename(__main__.__file__) + ' via ' + os.path.basename(__file__)
+# else:
+    # fileName = os.path.basename(__file__)
+    
+fileName = ''
 
 def getMessage(socketList, waitForMessage=True): #this function should not be called use getMessageofType() instead
     global messages, check, uID
@@ -40,7 +43,7 @@ def getMessage(socketList, waitForMessage=True): #this function should not be ca
     return None, None
         
 def getMessagefromStack(key): #this function should not be called use getMessageofType() instead
-    temp = json.loads(json.loads(messages[key].decode('UTF-8'))['content'])
+    temp = json.loads(json.loads(messages[key].decode('UTF-8'))['content'], object_pairs_hook = OrderedDict)
     messages.pop(key)
     check.pop(key)
     return temp #temp deleted when function returns as local
@@ -99,7 +102,8 @@ def initClientSocket():
     return clientsocket
         
 def localClient():
-    clientsocket = initClientSocket('localhost',1024)
+    clientsocket = initClientSocket()
+    clientsocket.connect(('localhost',1024))
     return clientsocket
 
 def localServer():
