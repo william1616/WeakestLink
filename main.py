@@ -213,9 +213,9 @@ def questionHandler(event, question, awnser):
         updateClient()
         while True:
             receivedCommand = network.getMessageofType('cmd', socketList)
-            if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= len(variables['contestants']):
-                statusUpdate(list(variables['contestants'].keys())[receivedCommand - 1] + ' you are the Weakest Link! Goodbye')
-                variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand - 1])
+            if isinstance(receivedCommand, int) and receivedCommand >= 0 and receivedCommand < len(variables['contestants']):
+                statusUpdate(list(variables['contestants'].keys())[receivedCommand] + ' you are the Weakest Link! Goodbye')
+                variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand])
                 variables['gamemode'] = 3
                 updateClient()
                 break

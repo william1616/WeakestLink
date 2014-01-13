@@ -72,7 +72,7 @@ def initTk():
     ttk.Button(mainFrame, text="Incorrect", command=lambda: network.sendMessage('cmd', 2, socket)).grid(column=2, row=2, sticky=N)
     ttk.Button(mainFrame, text="Bank", command=lambda: network.sendMessage('cmd', 3, socket)).grid(column=3, row=2, sticky=N)
     ttk.Button(mainFrame, text="Time Up", command=lambda: network.sendMessage('cmd', 4, socket)).grid(column=3, row=1, sticky=N)
-
+    
     voteFrame = ttk.Frame(root, padding="3 3 3 3")
     voteFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     voteFrame.columnconfigure(0, weight=1)
@@ -84,7 +84,7 @@ def initTk():
     
     for i in range(0, 8):
         voteVar.append(StringVar())
-        voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda: removeContestant(i + 1)))
+        voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
         voteButton[i].grid(column=i % 4, row=math.ceil((1 + i) / 4), sticky=N)
     
 if __name__ == '__main__':
@@ -113,7 +113,6 @@ if __name__ == '__main__':
                         voteVar[i].set(contestantList[i])
                     except IndexError:
                         voteButton[i].grid_forget()
-                    
                 voteFrame.grid()
         except:
             pass
