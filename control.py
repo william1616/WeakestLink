@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-import threading, time, network, datetime, math
+import threading, time, network, math, log
 
 socket = network.initClientSocket()
 
@@ -33,15 +33,17 @@ def removeContestant(contestantIndex):
     network.sendMessage('cmd', contestantIndex, socket)
 
 def initTk():
-    global root, startFrame, address, mainFrame, question, status, cur_money, bank, voteFrame, voteVar, voteButton
+    global config, root, startFrame, address, mainFrame, question, status, cur_money, bank, voteFrame, voteVar, voteButton
+    
+    window_title = config['Tk']['window_title']
+    
     root = Tk()
-    root.title("Control")
+    root.title(window_title)
 
     startFrame = ttk.Frame(root, padding="3 3 3 3")
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     startFrame.columnconfigure(0, weight=1)
     startFrame.rowconfigure(0, weight=1)
-    startFrame.grid_remove()
 
     address = StringVar()
     address.set('localhost')
@@ -86,11 +88,12 @@ def initTk():
         voteVar.append(StringVar())
         voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
         voteButton[i].grid(column=i % 4, row=math.ceil((1 + i) / 4), sticky=N)
-    
-if __name__ == '__main__':
+
+def main():
+    global config, root, startFrame, mainFrame, question, status, cur_money, bank, voteFrame, voteVar, voteButton
+    config = log.initConfig()
     mainLoop = True
     initTk()
-    startFrame.grid()
     while True:
         root.mainloop()
         try:
@@ -116,3 +119,6 @@ if __name__ == '__main__':
                 voteFrame.grid()
         except:
             pass
+            
+if __name__ == '__main__':
+    main()

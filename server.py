@@ -1,20 +1,20 @@
 from tkinter import *
 from tkinter import ttk
 from collections import OrderedDict
-import csv, threading, time, sys, json, os, network, datetime
+import csv, threading, time, sys, network, log
 
 variables = {
-	'cntQuestions': 0, #row counter for csv file
-	'correct': 0, #correct counter per round
-	'cntRounds': 1,
-	'cntRquestions': 1, #question counter per round
-	'bank': 0,
-	'question': '',
-	'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
-	'money': [0, 50,100,200,300,400,500,1000,2500,5000],
-	'crtContestant': -1, #current contestant key index
-	'gamemode': 0, #0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
-	}
+    'cntQuestions': 0, #row counter for csv file
+    'correct': 0, #correct counter per round
+    'cntRounds': 1,
+    'cntRquestions': 1, #question counter per round
+    'bank': 0,
+    'question': '',
+    'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
+    'money': [0, 50,100,200,300,400,500,1000,2500,5000],
+    'crtContestant': -1, #current contestant key index
+    'gamemode': 0, #0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
+    }
 status = []
 socketList = []
 
@@ -25,7 +25,7 @@ def statusUpdate(info):
     
     status.append(info)
     
-    log(info)
+    log.log(info)
     
     while len(status) > status_lines:
         status.pop(0)
@@ -34,11 +34,6 @@ def statusUpdate(info):
     
     for info in status:
         displayStatus.set(displayStatus.get()+info+'\n')
-
-def log(text):
-    if config['debug']['log']:
-        with open('log.txt', 'a') as file:
-            file.write(str(datetime.datetime.now()) + ' [' + '' + '] ' + text + '\n')   
 
 class serverListner (threading.Thread):
     def __init__(self):
@@ -125,14 +120,12 @@ def initTk():
 
     displayStatus = StringVar()
 
-    ttk.Label(startFrame, text='Status').grid(column=1, row=1, sticky=N)
-    ttk.Label(startFrame, textvariable=displayStatus, width=100).grid(column=1, row=2, sticky=N)
-    ttk.Button(startFrame, text='Start', command=start).grid(column=2, row=1, sticky=N)
-    ttk.Button(startFrame, text='Start Listner', command=lambda: listner.startListner()).grid(column=2, row=2, sticky=N)
-    ttk.Button(startFrame, text='Stop Listner', command=lambda: listner.stopListner(False)).grid(column=2, row=3, sticky=N)
-
-    ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
-    ttk.Label(mainFrame, textvariable=displayStatus, width=100).grid(column=1, row=2, sticky=N)
+    ttk.Label(startFrame, text='The Weakest Link Server', width=100).grid(column=0, row=0, sticky=N)
+    ttk.Label(startFrame, text='Status', width=100).grid(column=0, row=1, sticky=N)
+    ttk.Label(startFrame, textvariable=displayStatus, width=100).grid(column=0, row=2, sticky=N)
+    ttk.Button(startFrame, text='Start', command=start).grid(column=1, row=0, sticky=N)
+    ttk.Button(startFrame, text='Start Listner', command=lambda: listner.startListner()).grid(column=1, row=1, sticky=N)
+    ttk.Button(startFrame, text='Stop Listner', command=lambda: listner.stopListner(False)).grid(column=1, row=2, sticky=N)
 
     print('GUI Initiated')
 
@@ -242,25 +235,20 @@ def importQuestions(file):
 def updateClient():
     global variables, socketList
     try:
-        log('Update Client')
+        log.log('Update Client')
     except:
         print('Update Client')
     for socketObj in socketList:
         network.sendMessage('variables', variables, socketObj)
 
-def initConfig():
+def main():
     global config
-    
-    #config settings
-    fileName = 'config.json'
-    
     print('Importing Config...')
-    with open(fileName) as configFile:
-        config = json.loads(configFile.read())
+    config = log.initConfig()
     print('Config Imported')
-
-if __name__ == '__main__':
-    initConfig()
     initTk()
     initListner()
     root.mainloop()
+
+if __name__ == '__main__':
+    main()

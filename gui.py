@@ -136,5 +136,10 @@ def initTk():
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
 
 socket = network.initClientSocket()
-initTk()
-root.mainloop()
+
+def main():
+	initTk()
+	root.mainloop()
+
+if __name__ == '__main__':
+	main()

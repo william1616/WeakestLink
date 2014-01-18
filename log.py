@@ -3,9 +3,8 @@ from json import load, dump
 from os.path import basename
 import __main__
 
-def initConfig():    
-    #config settings
-    fileName = 'config.json'
+def initConfig(fileName='config.json'):
+    #options list here needs to be kept uptodate with config fields
     options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "questions.csv", "finalQ": "questions.csv"}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": True}}
     
     with open(fileName, 'r') as configFile:
@@ -33,9 +32,9 @@ def initConfig():
             return options
 
 config = initConfig()
-logName = basename(__file__)
 
-def log(text, fileName=config['debug']['fileName']):
-    if config['debug']['log']:
+def log(text, forceLog=False, fileName=config['debug']['fileName']):
+    logName = basename(__file__)
+    if config['debug']['log'] or forceLog:
         with open(fileName, 'a') as file:
             file.write(str(datetime.now()) + ' [' + logName + '] ' + text + '\n')
