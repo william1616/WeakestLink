@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-import threading, time, network, math, log
+import threading, time, network, math, misc
 
 socket = network.initClientSocket()
 
@@ -32,15 +32,10 @@ def removeContestant(contestantIndex):
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     network.sendMessage('cmd', contestantIndex, socket)
 
-def initTk():
-    global config, root, startFrame, address, mainFrame, question, status, cur_money, bank, voteFrame, voteVar, voteButton
-    
-    window_title = config['Tk']['window_title']
-    
-    root = Tk()
-    root.title(window_title)
+def initTk(parent):
+    global startFrame, address, mainFrame, question, status, cur_money, bank, voteFrame, voteVar, voteButton
 
-    startFrame = ttk.Frame(root, padding="3 3 3 3")
+    startFrame = ttk.Frame(parent, padding="3 3 3 3")
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     startFrame.columnconfigure(0, weight=1)
     startFrame.rowconfigure(0, weight=1)
@@ -49,11 +44,11 @@ def initTk():
     address.set('localhost')
 
     ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
-    ttk.Button(startFrame, text="Exit", command=root.destroy).grid(column=2, row=2, sticky=N)
+    ttk.Button(startFrame, text="Exit").grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
 
-    mainFrame = ttk.Frame(root, padding="3 3 3 3")
+    mainFrame = ttk.Frame(parent, padding="3 3 3 3")
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     mainFrame.columnconfigure(0, weight=1)
     mainFrame.rowconfigure(0, weight=1)
@@ -75,7 +70,7 @@ def initTk():
     ttk.Button(mainFrame, text="Bank", command=lambda: network.sendMessage('cmd', 3, socket)).grid(column=3, row=2, sticky=N)
     ttk.Button(mainFrame, text="Time Up", command=lambda: network.sendMessage('cmd', 4, socket)).grid(column=3, row=1, sticky=N)
     
-    voteFrame = ttk.Frame(root, padding="3 3 3 3")
+    voteFrame = ttk.Frame(parent, padding="3 3 3 3")
     voteFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     voteFrame.columnconfigure(0, weight=1)
     voteFrame.rowconfigure(0, weight=1)
@@ -89,11 +84,19 @@ def initTk():
         voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
         voteButton[i].grid(column=i % 4, row=math.ceil((1 + i) / 4), sticky=N)
 
-def main():
-    global config, root, startFrame, mainFrame, question, status, cur_money, bank, voteFrame, voteVar, voteButton
-    config = log.initConfig()
+def setup():
+    global config
+    print('Importing Config...')
+    config = misc.initConfig()
+    print('Config Imported')
+
+            
+if __name__ == '__main__':
+    setup()
     mainLoop = True
-    initTk()
+    root = Tk()
+    root.title(config['Tk']['window_title'])
+    initTk(root)
     while True:
         root.mainloop()
         try:
@@ -119,6 +122,3 @@ def main():
                 voteFrame.grid()
         except:
             pass
-            
-if __name__ == '__main__':
-    main()

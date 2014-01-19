@@ -1,7 +1,19 @@
 from datetime import datetime
 from json import load, dump
 from os.path import basename
-import __main__
+import __main__, threading
+
+class threadFunc(threading.Thread):
+	def __init__(self, function): #use lambda to pass args
+		theading.Thread.__init__()
+		self.function = function
+		self.end = False
+	def run(self):
+		while not self.end:
+			self.function()
+	def join(self):
+		self.end = True
+		threading.Thread.join()
 
 def initConfig(fileName='config.json'):
     #options list here needs to be kept uptodate with config fields

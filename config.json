@@ -4,7 +4,7 @@
         "finalQ": "questions.csv"
     }, 
     "debug": {
-        "log": true, 
+        "log": false, 
         "fileName": "log.txt"
     }, 
     "Tk": {
