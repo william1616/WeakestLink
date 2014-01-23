@@ -124,6 +124,8 @@ def variableUpdates():
     variables['gamemode'] = -1
     if mainTopLevel.config()['class'][4] == 'Tk':
         mainTopLevel.after(100, variableUpdates)
+    elif mainTopLevel.config()['class'][4] == 'Toplevel':
+        mainTopLevel.root.after(100, variableUpdates)
         
 def setup():
     global config

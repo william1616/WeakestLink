@@ -1,6 +1,11 @@
 from tkinter import *
 from tkinter import ttk
-import threading, server, control, gui
+import server, control, gui
+
+class rootTopLevel(Toplevel):
+	def __init__(self, root):
+		Toplevel.__init__(self, root)
+		self.root = root
 
 def initTk():
     global root
@@ -35,7 +40,7 @@ def startServer():
 def startControl():
     global root
     control.setup()
-    controlWindow = Toplevel(root)
+    controlWindow = rootTopLevel(root)
     control.initTk(controlWindow)
     
 def startGUI():
