@@ -68,8 +68,8 @@ def wrapText(surface, coordinates, text, font, textColour):
         text = text[i:]
 
     return text
-
-def draw(round, roundQuestion, question, correctIndex, money, bank):
+    
+def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
     displaySurface.fill(blue)
     mainFont = pygame.font.Font('freesansbold.ttf', 40)
     titleFont = pygame.font.Font('freesansbold.ttf', 55)
@@ -96,6 +96,48 @@ def draw(round, roundQuestion, question, correctIndex, money, bank):
 
     wrapText(displaySurface, (155, titleRect.bottom + 10, width - 165, height - (titleRect.height + 10)), question, mainFont, black)
 
+def drawTime(round, contestants):
+    drawEnd(round, contestants, 'Time Up')
+
+def drawCorrect(round, contestants):
+    drawEnd(round, contestants, 'You got all the Questions Correct')
+
+def drawEnd(round, contestants, line1):
+    displaySurface.fill(blue)
+    mainFont = pygame.font.Font('freesansbold.ttf', 40)
+    titleFont = pygame.font.Font('freesansbold.ttf', 55)
+    titleFont.set_underline(True)
+    subTitleFont = pygame.font.Font('freesansbold.ttf', 55)
+    
+    timeUp = titleFont.render(line1, True, black)
+    timeUpRect = timeUp.get_rect()
+    timeUpRect.midtop = (displaySurface.get_width() / 2, 10)
+    displaySurface.blit(timeUp, timeUpRect)
+    
+    endofRound = subTitleFont.render('End of Round ' + str(round), True, black)
+    endofRoundRect = endofRound.get_rect()
+    endofRoundRect.midtop = (displaySurface.get_width() / 2, 70)
+    displaySurface.blit(endofRound, endofRoundRect)
+    
+    weakestLink = mainFont.render('You must now choose the weakest link', True, black)
+    weakestLinkRect = weakestLink.get_rect()
+    weakestLinkRect.midtop = (displaySurface.get_width() / 2, 180)
+    displaySurface.blit(weakestLink, weakestLinkRect)
+    
+    y = 270
+    contestantList = list(contestants.keys())
+    contestantScore = list(contestants.values())
+    
+    for i in range(0, len(contestants)):
+        contestant = mainFont.render(contestantList[i] + ': ' + str(contestantScore[i]), True, black)
+        contestantRect = contestant.get_rect()
+        if i % 2 == 0:
+            contestantRect.midtop = (displaySurface.get_width() / 3, y)
+        else:
+            contestantRect.midtop = (2 * displaySurface.get_width() / 3, y)
+            y += 50
+        displaySurface.blit(contestant, contestantRect)
+    
 def gameLoop():
     global socket
     while True:
@@ -105,8 +147,12 @@ def gameLoop():
                 sys.exit()
         variables = network.getMessageofType('variables', [socket], False)
         if variables:
-            print(variables)
-            draw(variables['cntRounds'], variables['cntRquestions'], variables['question'], variables['correct'], variables['money'], variables['bank'])
+            if variables['correct'] == len(variables['money']) - 1:
+                drawCorrect(variables['cntRounds'], variables['contestants'])
+            elif variables['time']:
+                drawTime(variables['cntRounds'], variables['contestants'])
+            else:
+                drawQuestion(variables['cntRounds'], variables['cntRquestions'], variables['question'], variables['correct'], variables['money'], variables['bank'])
         pygame.display.update()
         fpsClock.tick(FPS)
 

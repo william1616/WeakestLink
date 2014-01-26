@@ -3,9 +3,9 @@ from tkinter import ttk
 import server, control, gui
 
 class rootTopLevel(Toplevel):
-	def __init__(self, root):
-		Toplevel.__init__(self, root)
-		self.root = root
+    def __init__(self, root):
+        Toplevel.__init__(self, root)
+        self.root = root
 
 def initTk():
     global root

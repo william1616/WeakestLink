@@ -41,8 +41,6 @@ def initTk(parent):
     parent.resizable(False, False)
     parent.withdraw()
     
-    print(parent.config())
-    
     startTopLevel = Toplevel(parent)
     startTopLevel.title(config['Tk']['window_title'])
     startTopLevel.resizable(False, False)
