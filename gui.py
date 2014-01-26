@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-import pygame, sys, operator, network
+import pygame, sys, operator, network, misc, threading
 from pygame.locals import *
 
 def initPygame():
@@ -111,18 +111,21 @@ def gameLoop():
         fpsClock.tick(FPS)
 
 def start():
-    global root, address, socket
+    global address, socket
     if network.attemptConnect(socket, address.get(), 1024):
-        root.destroy()
+        startFrame.grid_remove() #fix this
         initPygame()
-        gameLoop()
+        thread = gameLoopThread()
+        thread.start()
 
-def initTk():
-    global root, address
-    root = Tk()
-    root.title('The Weakest Link')
+class gameLoopThread(threading.Thread):
+    def run(self):
+        gameLoop()
+        
+def initTk(parent):
+    global address, startFrame
     
-    startFrame = ttk.Frame(root, padding="3 3 3 3")
+    startFrame = ttk.Frame(parent, padding="3 3 3 3")
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     startFrame.columnconfigure(0, weight=1)
     startFrame.rowconfigure(0, weight=1)
@@ -131,15 +134,20 @@ def initTk():
     address.set('localhost')
     
     ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
-    ttk.Button(startFrame, text="Exit", command=root.destroy).grid(column=2, row=2, sticky=N)
+    ttk.Button(startFrame, text="Exit", command=parent.destroy).grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
 
-socket = network.initClientSocket()
-
-def main():
-	initTk()
-	root.mainloop()
+def setup():
+    global socket, config
+    socket = network.initClientSocket()
+    print('Importing Config...')
+    config = misc.initConfig()
+    print('Config Imported')
 
 if __name__ == '__main__':
-	main()
+    setup()
+    root = Tk()
+    root.title(config['Tk']['window_title'])
+    initTk(root)
+    root.mainloop()
