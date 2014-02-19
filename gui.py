@@ -157,19 +157,33 @@ def gameLoop():
         fpsClock.tick(FPS)
 
 def start():
-    global address, socket
+    global address, socket, startFrame, waitFrame
     if network.attemptConnect(socket, address.get(), 1024):
-        startFrame.grid_remove() #fix this
-        initPygame()
-        thread = gameLoopThread()
-        thread.start()
+        startFrame.grid_forget()
+        waitFrame.grid()
+        isServerRunning()
 
-class gameLoopThread(threading.Thread):
-    def run(self):
+            
+def isServerRunning():
+    global mainTopLevel, socket, variables
+    
+    variables = network.getMessageofType('variables', [socket], False)
+    if variables and variables['gamemode'] != -1: #if no longer listing for conections
+        mainTopLevel.destroy()
+        mainTopLevel.quit()
+        initPygame()
         gameLoop()
+    else:
+        #run the function every time the system is idle
+        if mainTopLevel.config()['class'][4] == 'Tk':
+            mainTopLevel.after_idle(isServerRunning)
+        elif mainTopLevel.config()['class'][4] == 'Toplevel':
+            mainTopLevel.root.after_idle(isServerRunning)
         
 def initTk(parent):
-    global address, startFrame
+    global address, startFrame, waitFrame, mainTopLevel
+    
+    mainTopLevel = parent
     
     startFrame = ttk.Frame(parent, padding="3 3 3 3")
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
@@ -183,6 +197,16 @@ def initTk(parent):
     ttk.Button(startFrame, text="Exit", command=parent.destroy).grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
+    
+    waitFrame = ttk.Frame(parent, padding="3 3 3 3")
+    waitFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    waitFrame.columnconfigure(0, weight=1)
+    waitFrame.rowconfigure(0, weight=1)
+    
+    ttk.Label(waitFrame, text="Connected to Server").grid(column=0, row=0, sticky=N)
+    ttk.Label(waitFrame, text="Waiting for Server to Start").grid(column=0, row=1, sticky=N)
+    
+    waitFrame.grid_remove()
 
 def setup():
     global socket, config

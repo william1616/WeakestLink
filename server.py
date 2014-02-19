@@ -13,7 +13,7 @@ variables = {
     'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
     'money': [0, 50,100,200,300,400,500,1000,2500,5000],
     'crtContestant': -1, #current contestant key index
-    'gamemode': 0, #0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
+    'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
     'time': False, #time up
     }
 status = []
@@ -90,7 +90,7 @@ def start():
     listner.stopListner(True)
     startFrame.grid_remove()
     mainFrame.grid()
-    variables['gamemode'] = 1
+    variables['gamemode'] = 0
     questionThread = questionControl()
     questionThread.start()
 
@@ -133,18 +133,23 @@ def askQuestion():
     
     mainQ = config['questions']['mainQ']
     
+	#if the questions are not already imported import them
     try:
         questions
     except:
         print('Importing Questions')
         questions = importQuestions(mainQ)
+	
+	#cycle through each contestant in turn
     if variables['crtContestant'] < len(variables['contestants']) - 1:
         variables['crtContestant'] += 1
     else:
         variables['crtContestant'] = 0
+	
+	#if there are still questions left ask the question
     if variables['cntQuestions'] < len(questions):
         if variables['cntRquestions'] == 1:
-            for i in list(variables['contestants'].keys()):
+            for i in list(variables['contestants'].keys()): #set each contestatnts score to 0
                 variables['contestants'][i] = 0
             statusUpdate('Round ' + str(variables['cntRounds']) + ' starting')
             variables['gamemode'] = 0

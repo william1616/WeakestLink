@@ -19,13 +19,28 @@ class listner(threading.Thread):
             self.end = True
 
 def start():
-    global address, socket, startTopLevel, mainTopLevel, variables
+    global address, socket, startFrame, waitFrame
     if network.attemptConnect(socket, address.get(), config['server']['bindPort']):
+        startFrame.grid_forget()
+        waitFrame.grid()
+        isServerRunning()
+
+def isServerRunning():
+    global socket, startTopLevel, mainTopLevel, variables
+    
+    variables = network.getMessageofType('variables', [socket], False)
+    if variables and variables['gamemode'] != -1: #if no longer listing for conections
         receive = listner()
         receive.start()
         variableUpdates()
         startTopLevel.withdraw()
         mainTopLevel.deiconify()
+    else:
+        #run the function every time the system is idle
+        if mainTopLevel.config()['class'][4] == 'Tk':
+            mainTopLevel.after_idle(isServerRunning)
+        elif mainTopLevel.config()['class'][4] == 'Toplevel':
+            mainTopLevel.root.after_idle(isServerRunning)
 
 def removeContestant(contestantIndex):
     global voteFrame, mainFrame, socket
@@ -34,7 +49,7 @@ def removeContestant(contestantIndex):
     network.sendMessage('cmd', contestantIndex, socket)
 
 def initTk(parent):
-    global address, question, status, cur_money, bank, voteVar, voteButton, config, startTopLevel, mainTopLevel, voteTopLevel
+    global address, question, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame
 
     mainTopLevel = parent
     parent.title(config['Tk']['window_title'])
@@ -92,6 +107,16 @@ def initTk(parent):
     voteVar = []
     voteButton = []
     
+    waitFrame = ttk.Frame(startTopLevel, padding="3 3 3 3")
+    waitFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    waitFrame.columnconfigure(0, weight=1)
+    waitFrame.rowconfigure(0, weight=1)
+    
+    ttk.Label(waitFrame, text="Connected to Server").grid(column=0, row=0, sticky=N)
+    ttk.Label(waitFrame, text="Waiting for Server to Start").grid(column=0, row=1, sticky=N)
+    
+    waitFrame.grid_remove()
+    
     for i in range(0, 8):
         voteVar.append(StringVar())
         voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
@@ -119,7 +144,9 @@ def variableUpdates():
             except IndexError:
                 voteButton[i].grid_forget()
         voteTopLevel.deiconify()
-    variables['gamemode'] = -1
+    variables['gamemode'] = -1 #this only effects the local var not the var on the server
+    
+    #run this function again in 100ms
     if mainTopLevel.config()['class'][4] == 'Tk':
         mainTopLevel.after(100, variableUpdates)
     elif mainTopLevel.config()['class'][4] == 'Toplevel':

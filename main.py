@@ -46,7 +46,7 @@ def startControl():
 def startGUI():
     global root
     gui.setup()
-    GUIWindow = Toplevel(root)
+    GUIWindow = rootTopLevel(root)
     gui.initTk(GUIWindow)
     
 initTk()
