@@ -92,3 +92,11 @@ def localClient():
 def localServer():
     serversocket = initServerSocket('localhost',1024)
     return serversocket
+    
+def closeSocket(socketObj):
+    #this shouldn't be needed but there no harm calling it
+    try:
+        socketObj.shutdown(socket.SHUT_RDWR)
+    except OSError: #incase the socket is not connected
+        pass
+    socketObj.close()
