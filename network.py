@@ -64,7 +64,7 @@ def initServerSocket(bindAddress, bindPort):
     return serversocket
     
 def serverListner(serversocket):
-    readable, writable, err = select.select([serversocket.fileno()], [], [], 1)
+    readable, writable, err = select.select([serversocket.fileno()], [], [], 0.1)
     if readable:
         clientsocket, address = serversocket.accept()
         return clientsocket, address

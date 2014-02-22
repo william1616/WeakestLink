@@ -11,12 +11,11 @@ class listner(threading.Thread):
         self.end = False
     def run(self):
         global variables, socket
-        while True:
+        while not self.end:
             variables = network.getMessageofType('variables', [socket])
-            if self.end == True:
-                break
     def join(self):
         self.end = True
+        time.sleep(0.1)
         threading.Thread.join(self)
         
 receive = listner()

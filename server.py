@@ -64,7 +64,7 @@ class serverListner (threading.Thread):
             statusUpdate('Terminated Listner Thread')
         elif self.running:
             self.running = False
-            time.sleep(1)
+            time.sleep(0.1)
             if hasattr(self, 'serversocket'): network.closeSocket(self.serversocket)
             statusUpdate('Stopped Listner')
         else:
