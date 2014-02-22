@@ -28,7 +28,7 @@ class placeholder():
         self.change(text, font, textColour)
     def change(self, text=None, font=None, textColour=None):
         if not textColour: textColour = pygame.Color(0, 0, 0)
-        if not font: font = pygame.font.Font('freesansbold.ttf', 24)
+        if not font: font = pygame.font.SysFont('microsoftsansserif', 24)
         if self.active: placeholder = pygame.image.load('redPlaceholder.png')
         else: placeholder = pygame.image.load('bluePlaceholder.png')
         self.surface.blit(placeholder, self.coordinates)
@@ -71,8 +71,8 @@ def wrapText(surface, coordinates, text, font, textColour):
     
 def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
     displaySurface.fill(blue)
-    mainFont = pygame.font.Font('freesansbold.ttf', 40)
-    titleFont = pygame.font.Font('freesansbold.ttf', 55)
+    mainFont = pygame.font.SysFont('microsoftsansserif', 40)
+    titleFont = pygame.font.SysFont('microsoftsansserif', 55)
     titleFont.set_underline(True)
 
     money.remove(0)
@@ -104,10 +104,10 @@ def drawCorrect(round, contestants):
 
 def drawEnd(round, contestants, line1):
     displaySurface.fill(blue)
-    mainFont = pygame.font.Font('freesansbold.ttf', 40)
-    titleFont = pygame.font.Font('freesansbold.ttf', 55)
+    mainFont = pygame.font.SysFont('microsoftsansserif', 40)
+    titleFont = pygame.font.SysFont('microsoftsansserif', 55)
     titleFont.set_underline(True)
-    subTitleFont = pygame.font.Font('freesansbold.ttf', 55)
+    subTitleFont = pygame.font.SysFont('microsoftsansserif', 55)
     
     timeUp = titleFont.render(line1, True, black)
     timeUpRect = timeUp.get_rect()
