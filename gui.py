@@ -140,11 +140,14 @@ def drawEnd(round, contestants, line1):
     
 def gameLoop():
     global socket
+    end = False
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or event.type == KEYDOWN and event.dict['key'] == 27:
-                pygame.quit()
-                sys.exit()
+                close()
+                end = True
+                break
+        if end: break
         variables = network.getMessageofType('variables', [socket], False)
         if variables:
             if variables['correct'] == len(variables['money']) - 1:
@@ -169,8 +172,7 @@ def isServerRunning():
     
     variables = network.getMessageofType('variables', [socket], False)
     if variables and variables['gamemode'] != -1: #if no longer listing for conections
-        mainTopLevel.destroy()
-        mainTopLevel.quit()
+        mainTopLevel.withdraw()
         initPygame()
         gameLoop()
     else:
@@ -207,6 +209,15 @@ def initTk(parent):
     ttk.Label(waitFrame, text="Waiting for Server to Start").grid(column=0, row=1, sticky=N)
     
     waitFrame.grid_remove()
+    
+    parent.protocol("WM_DELETE_WINDOW", close)
+    
+def close():
+    global mainTopLevel, socket
+    network.closeSocket(socket)
+    if mainTopLevel.config()['class'][4] == 'Toplevel': mainTopLevel.root.deiconify()
+    mainTopLevel.destroy()
+    pygame.quit()
 
 def setup():
     global socket, config

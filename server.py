@@ -70,8 +70,9 @@ class serverListner (threading.Thread):
         else:
             statusUpdate('Cannot stop Listner - Listner is not Running')
     def join(self):
-        self.end = True
         self.running = False
+        time.sleep(0.1)
+        self.end = True
         threading.Thread.join(self)
 
 class questionControl(threading.Thread):
