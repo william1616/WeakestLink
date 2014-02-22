@@ -12,7 +12,7 @@ if input('Release Build [n]: ') == 'y':
     versionList = buildData['version'].split('.')
     newVersionEnd = str(int(versionList[len(versionList) - 1]) + 1)
     newVersion = '.'.join(versionList[:len(versionList) - 1])
-    newVersion = newVersion + '.' + newVersionEnd
+    newVersion = newVersion + '.' + newVersionEnd + '-Alpha'
 
     buildData['version'] = newVersion
 else:
