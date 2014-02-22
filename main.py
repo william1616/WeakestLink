@@ -32,19 +32,22 @@ def initTk():
     
 def startServer():
     global root
+    root.withdraw()
     server.setup()
-    serverWindow = Toplevel(root)
+    serverWindow = rootTopLevel(root)
     server.initTk(serverWindow)
     server.initListner()
     
 def startControl():
     global root
+    root.withdraw()
     control.setup()
     controlWindow = rootTopLevel(root)
     control.initTk(controlWindow)
     
 def startGUI():
     global root
+    root.withdraw()
     gui.setup()
     GUIWindow = rootTopLevel(root)
     gui.initTk(GUIWindow)

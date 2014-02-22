@@ -42,27 +42,30 @@ class serverListner (threading.Thread):
         self.running = self.end = False
     def run(self):
         global socketList
-        serversocket = network.localServer()
         while not self.end:
             while self.running:
-                    clientsocket, address = network.serverListner(serversocket) 
+                    clientsocket, address = network.serverListner(self.serversocket) 
                     if clientsocket:
                         socketList.append(clientsocket)
                         statusUpdate(address[0] + ' Succesfully Connected')
     def startListner(self):
         global status
         if not self.running:
-            statusUpdate('Started Listner')
+            self.serversocket = network.localServer()
             self.running = True
+            statusUpdate('Started Listner')
         else:
             statusUpdate('Cannot start Listner - Listner is already Running!')
     def stopListner(self, join):
         global status
         if join and self.isAlive():
             self.join()
+            if hasattr(self, 'serversocket'): network.closeSocket(self.serversocket)
             statusUpdate('Terminated Listner Thread')
-        elif self.running and self.isAlive():
+        elif self.running:
             self.running = False
+            time.sleep(1)
+            if hasattr(self, 'serversocket'): network.closeSocket(self.serversocket)
             statusUpdate('Stopped Listner')
         else:
             statusUpdate('Cannot stop Listner - Listner is not Running')
@@ -86,7 +89,7 @@ class questionControl(threading.Thread):
                     self.newQuestion = True
 
 def start():
-    global variables
+    global variables, listner
     listner.stopListner(True)
     startFrame.grid_remove()
     mainFrame.grid()
@@ -102,7 +105,7 @@ def initListner():
 def initTk(parent):
     global displayStatus, startFrame, mainFrame, listner
     print('Initiating GUI...')
-
+    
     startFrame = ttk.Frame(parent, padding="3 3 3 3")
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     startFrame.columnconfigure(0, weight=1)
@@ -126,27 +129,34 @@ def initTk(parent):
     ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
     ttk.Label(mainFrame, textvariable=displayStatus, width=100).grid(column=1, row=2, sticky=N)
     
+    parent.protocol("WM_DELETE_WINDOW", lambda: close(parent))
+    
     print('GUI Initiated')
 
+def close(topLevel):
+    listner.stopListner(True)
+    if topLevel.config()['class'][4] == 'Toplevel': topLevel.root.deiconify()
+    topLevel.destroy()
+    
 def askQuestion():
     global variables, questions, status
     
     mainQ = config['questions']['mainQ']
     
-	#if the questions are not already imported import them
+    #if the questions are not already imported import them
     try:
         questions
     except:
         print('Importing Questions')
         questions = importQuestions(mainQ)
-	
-	#cycle through each contestant in turn
+    
+    #cycle through each contestant in turn
     if variables['crtContestant'] < len(variables['contestants']) - 1:
         variables['crtContestant'] += 1
     else:
         variables['crtContestant'] = 0
-	
-	#if there are still questions left ask the question
+    
+    #if there are still questions left ask the question
     if variables['cntQuestions'] < len(questions):
         if variables['cntRquestions'] == 1:
             for i in list(variables['contestants'].keys()): #set each contestatnts score to 0

@@ -16,7 +16,10 @@ class listner(threading.Thread):
             if self.end == True:
                 break
     def join(self):
-            self.end = True
+        self.end = True
+        threading.Thread.join(self)
+        
+receive = listner()
 
 def start():
     global address, socket, startFrame, waitFrame
@@ -26,11 +29,10 @@ def start():
         isServerRunning()
 
 def isServerRunning():
-    global socket, startTopLevel, mainTopLevel, variables
+    global socket, startTopLevel, mainTopLevel, variables, receive
     
     variables = network.getMessageofType('variables', [socket], False)
-    if variables and variables['gamemode'] != -1: #if no longer listing for conections
-        receive = listner()
+    if variables and variables['gamemode'] != -1: #if no longer listning for conections
         receive.start()
         variableUpdates()
         startTopLevel.withdraw()
@@ -69,7 +71,7 @@ def initTk(parent):
     address.set('localhost')
 
     ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
-    ttk.Button(startFrame, text="Exit", command=startTopLevel.destroy).grid(column=2, row=2, sticky=N)
+    ttk.Button(startFrame, text="Exit", command=close).grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
 
@@ -121,7 +123,19 @@ def initTk(parent):
         voteVar.append(StringVar())
         voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
         voteButton[i].grid(column=i % 4, row=math.ceil((1 + i) / 4), sticky=N)
+        
+    mainTopLevel.protocol("WM_DELETE_WINDOW", close)
+    startTopLevel.protocol("WM_DELETE_WINDOW", close)
+    voteTopLevel.protocol("WM_DELETE_WINDOW", close)
 
+def close():
+    global receive
+    if receive.isAlive(): receive.join()
+    if mainTopLevel.config()['class'][4] == 'Toplevel': mainTopLevel.root.deiconify()
+    mainTopLevel.destroy()
+    startTopLevel.destroy()
+    voteTopLevel.destroy()
+        
 def variableUpdates():
     global question, status, cur_money, bank, startTopLevel, mainTopLevel, voteTopLevel
     if variables['gamemode'] == 0:
