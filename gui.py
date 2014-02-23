@@ -4,17 +4,17 @@ import pygame, sys, operator, network, misc, threading
 from pygame.locals import *
 
 def initPygame():
-    global displaySurface, FPS, fpsClock, width, height, white, blue, black
+    global displaySurface, FPS, fpsClock, white, blue, black
     pygame.init()
 
-    FPS = 10
+    FPS = config['pygame']['fps']
     fpsClock = pygame.time.Clock()
 
-    width = 800
-    height = 600
+    width = config['pygame']['width']
+    height = config['pygame']['height']
 
     displaySurface = pygame.display.set_mode((width, height), 0)
-    pygame.display.set_caption("The Weakest Link")
+    pygame.display.set_caption(config['pygame']['window_title'])
 
     white = pygame.Color(255, 255, 255)
     blue = pygame.Color(0, 100, 255)
@@ -28,7 +28,7 @@ class placeholder():
         self.change(text, font, textColour)
     def change(self, text=None, font=None, textColour=None):
         if not textColour: textColour = pygame.Color(0, 0, 0)
-        if not font: font = pygame.font.SysFont('microsoftsansserif', 24)
+        if not font: font = pygame.font.SysFont(config['pygame']['font'], int(self.surface.get_height() / 25))
         if self.active: placeholder = pygame.image.load('redPlaceholder.png')
         else: placeholder = pygame.image.load('bluePlaceholder.png')
         self.surface.blit(placeholder, self.coordinates)
@@ -71,8 +71,8 @@ def wrapText(surface, coordinates, text, font, textColour):
     
 def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
     displaySurface.fill(blue)
-    mainFont = pygame.font.SysFont('microsoftsansserif', 40)
-    titleFont = pygame.font.SysFont('microsoftsansserif', 55)
+    mainFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / 15))
+    titleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / (120 / 11)))
     titleFont.set_underline(True)
 
     money.remove(0)
@@ -80,21 +80,21 @@ def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
     moneyPlaceholder = {}
 
     for value in money:
-            moneyPlaceholder[value] = placeholder(displaySurface, (10, 10 + 55 * money.index(value)), '£' + str(value), textColour = white)
+            moneyPlaceholder[value] = placeholder(displaySurface, ((int(displaySurface.get_width() / 80)), int((displaySurface.get_height()  / 60) + (displaySurface.get_height()  / (120 / 11)) * money.index(value))), '£' + str(value), textColour = white)
     
     money.reverse()
 
     for i in range(0, correctIndex):
         moneyPlaceholder[money[i]].activate()
             
-    bank = placeholder(displaySurface, (10, height - 65), "Bank £" + str(bank), textColour = white, active = True)
+    bank = placeholder(displaySurface, (int(displaySurface.get_width() / 80), int(displaySurface.get_height()  - (displaySurface.get_height()  / (120 / 13)))), "Bank £" + str(bank), textColour = white, active = True)
 
     titleText = titleFont.render('Round ' + str(round) + ' Question ' + str(roundQuestion), True, black)
     titleRect = titleText.get_rect()
-    titleRect.topleft = (155, 10)
+    titleRect.topleft = (int(displaySurface.get_width() / (120 / 31)), int(displaySurface.get_height()  / 80))
     displaySurface.blit(titleText, titleRect)
 
-    wrapText(displaySurface, (155, titleRect.bottom + 10, width - 165, height - (titleRect.height + 10)), question, mainFont, black)
+    wrapText(displaySurface, (int(displaySurface.get_width() / (120 / 31)), int(titleRect.bottom + (displaySurface.get_height()  / 80)), int(displaySurface.get_width() - (displaySurface.get_width() / (40 /11))), int(displaySurface.get_height()  - (titleRect.height + (displaySurface.get_height()  / 80)))), question, mainFont, black)
 
 def drawTime(round, contestants):
     drawEnd(round, contestants, 'Time Up')
@@ -104,27 +104,27 @@ def drawCorrect(round, contestants):
 
 def drawEnd(round, contestants, line1):
     displaySurface.fill(blue)
-    mainFont = pygame.font.SysFont('microsoftsansserif', 40)
-    titleFont = pygame.font.SysFont('microsoftsansserif', 55)
+    mainFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / 20))
+    titleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / (160 / 11)))
     titleFont.set_underline(True)
-    subTitleFont = pygame.font.SysFont('microsoftsansserif', 55)
+    subTitleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height() / (160 / 11)))
     
     timeUp = titleFont.render(line1, True, black)
     timeUpRect = timeUp.get_rect()
-    timeUpRect.midtop = (displaySurface.get_width() / 2, 10)
+    timeUpRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / 80))
     displaySurface.blit(timeUp, timeUpRect)
     
     endofRound = subTitleFont.render('End of Round ' + str(round), True, black)
     endofRoundRect = endofRound.get_rect()
-    endofRoundRect.midtop = (displaySurface.get_width() / 2, 70)
+    endofRoundRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / (80 / 7)))
     displaySurface.blit(endofRound, endofRoundRect)
     
     weakestLink = mainFont.render('You must now choose the weakest link', True, black)
     weakestLinkRect = weakestLink.get_rect()
-    weakestLinkRect.midtop = (displaySurface.get_width() / 2, 180)
+    weakestLinkRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / (40 / 9)))
     displaySurface.blit(weakestLink, weakestLinkRect)
     
-    y = 270
+    y = int(displaySurface.get_height() / (80 / 27))
     contestantList = list(contestants.keys())
     contestantScore = list(contestants.values())
     
@@ -132,10 +132,10 @@ def drawEnd(round, contestants, line1):
         contestant = mainFont.render(contestantList[i] + ': ' + str(contestantScore[i]), True, black)
         contestantRect = contestant.get_rect()
         if i % 2 == 0:
-            contestantRect.midtop = (displaySurface.get_width() / 3, y)
+            contestantRect.midtop = (int(displaySurface.get_width() / 3), y)
         else:
-            contestantRect.midtop = (2 * displaySurface.get_width() / 3, y)
-            y += 50
+            contestantRect.midtop = (int(2 * displaySurface.get_width() / 3), y)
+            y += int(displaySurface.get_height() / 16)
         displaySurface.blit(contestant, contestantRect)
     
 def gameLoop():
@@ -161,7 +161,7 @@ def gameLoop():
 
 def start():
     global address, socket, startFrame, waitFrame
-    if network.attemptConnect(socket, address.get(), 1024):
+    if network.attemptConnect(socket, address.get(), config['server']['bindPort']):
         startFrame.grid_forget()
         waitFrame.grid()
         isServerRunning()
@@ -193,7 +193,7 @@ def initTk(parent):
     startFrame.rowconfigure(0, weight=1)
     
     address = StringVar()
-    address.set('localhost')
+    address.set(config['server']['bindAddress'])
     
     ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
     ttk.Button(startFrame, text="Exit", command=close).grid(column=2, row=2, sticky=N)

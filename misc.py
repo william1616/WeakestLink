@@ -4,20 +4,20 @@ from os.path import basename
 import __main__, threading
 
 class threadFunc(threading.Thread):
-	def __init__(self, function): #use lambda to pass args
-		theading.Thread.__init__()
-		self.function = function
-		self.end = False
-	def run(self):
-		while not self.end:
-			self.function()
-	def join(self):
-		self.end = True
-		threading.Thread.join()
+    def __init__(self, function): #use lambda to pass args
+        theading.Thread.__init__()
+        self.function = function
+        self.end = False
+    def run(self):
+        while not self.end:
+            self.function()
+    def join(self):
+        self.end = True
+        threading.Thread.join()
 
 def initConfig(fileName='config.json'):
-    #options list here needs to be kept uptodate with config fields
-    options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "questions.csv", "finalQ": "questions.csv"}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": True}}
+    #options list here needs to be kept up to date with config fields
+    options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "questions.csv", "finalQ": "questions.csv"}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": False}, "pygame": {"font": "microsoftsansserif", "window_title": "The Weakest Link", "fps": 10, "width": 800, "height": 600}}
     
     with open(fileName, 'r') as configFile:
         try:
@@ -31,10 +31,10 @@ def initConfig(fileName='config.json'):
                     for subkey in value:
                         subvalue = value.get(subkey)
                         if not subkey in config[key]:
-                            print('cannot find key [' + key + '][' + subkey + ' in ConfigFile')
+                            print('Cannot find key [' + key + '][' + subkey + ' in ConfigFile')
                             raise
                 else:
-                    print('cannot find key [' + key + '] in ConfigFile')
+                    print('Cannot find key [' + key + '] in ConfigFile')
                     raise
                 return config
         except:
