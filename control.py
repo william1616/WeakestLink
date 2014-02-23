@@ -12,7 +12,8 @@ class listner(threading.Thread):
     def run(self):
         global variables, socket
         while not self.end:
-            variables = network.getMessageofType('variables', [socket])
+            temp = network.getMessageofType('variables', [socket], False)
+            if temp: variables = temp
     def join(self):
         self.end = True
         time.sleep(0.1)
@@ -37,11 +38,10 @@ def isServerRunning():
         startTopLevel.withdraw()
         mainTopLevel.deiconify()
     else:
-        #run the function every time the system is idle
         if mainTopLevel.config()['class'][4] == 'Tk':
-            mainTopLevel.after_idle(isServerRunning)
+            mainTopLevel.after(100, isServerRunning)
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
-            mainTopLevel.root.after_idle(isServerRunning)
+            mainTopLevel.root.after(100, isServerRunning)
 
 def removeContestant(contestantIndex):
     global voteFrame, mainFrame, socket
@@ -136,7 +136,7 @@ def close():
     voteTopLevel.destroy()
         
 def variableUpdates():
-    global question, status, cur_money, bank, startTopLevel, mainTopLevel, voteTopLevel
+    global question, status, cur_money, bank, startTopLevel, mainTopLevel, voteTopLevel, variables
     if variables['gamemode'] == 0:
         voteTopLevel.withdraw()
         status.set('Round ' + str(variables['cntRounds']) + ' starting')
