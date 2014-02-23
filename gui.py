@@ -168,7 +168,7 @@ def start():
 
             
 def isServerRunning():
-    global mainTopLevel, socket, variables
+    global mainTopLevel, socket
     
     variables = network.getMessageofType('variables', [socket], False)
     if variables and variables['gamemode'] != -1: #if no longer listing for conections
