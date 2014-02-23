@@ -196,7 +196,7 @@ def initTk(parent):
     address.set('localhost')
     
     ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
-    ttk.Button(startFrame, text="Exit", command=parent.destroy).grid(column=2, row=2, sticky=N)
+    ttk.Button(startFrame, text="Exit", command=close).grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
     
