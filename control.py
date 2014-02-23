@@ -1,25 +1,8 @@
 from tkinter import *
 from tkinter import ttk
-import threading, time, network, math, misc
+import time, network, math, misc
 
 socket = network.initClientSocket()
-variables = {'gamemode': -1}
-
-class listner(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.end = False
-    def run(self):
-        global variables, socket
-        while not self.end:
-            temp = network.getMessageofType('variables', [socket], False)
-            if temp: variables = temp
-    def join(self):
-        self.end = True
-        time.sleep(0.1)
-        threading.Thread.join(self)
-        
-receive = listner()
 
 def start():
     global address, socket, startFrame, waitFrame
@@ -29,11 +12,10 @@ def start():
         isServerRunning()
 
 def isServerRunning():
-    global socket, startTopLevel, mainTopLevel, variables, receive
+    global socket, startTopLevel, mainTopLevel
     
     variables = network.getMessageofType('variables', [socket], False)
     if variables and variables['gamemode'] != -1: #if no longer listning for conections
-        receive.start()
         variableUpdates()
         startTopLevel.withdraw()
         mainTopLevel.deiconify()
@@ -128,36 +110,38 @@ def initTk(parent):
     voteTopLevel.protocol("WM_DELETE_WINDOW", close)
 
 def close():
-    global receive
-    if receive.isAlive(): receive.join()
+    global mainTopLevel, startTopLevel, voteTopLevel
     if mainTopLevel.config()['class'][4] == 'Toplevel': mainTopLevel.root.deiconify()
     mainTopLevel.destroy()
     startTopLevel.destroy()
     voteTopLevel.destroy()
         
 def variableUpdates():
-    global question, status, cur_money, bank, startTopLevel, mainTopLevel, voteTopLevel, variables
-    if variables['gamemode'] == 0:
-        voteTopLevel.withdraw()
-        status.set('Round ' + str(variables['cntRounds']) + ' starting')
-        mainTopLevel.deiconify()
-    elif variables['gamemode'] == 1:
-        voteTopLevel.withdraw()
-        status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
-        question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
-        cur_money.set(list(variables['money'])[variables['correct']])
-        bank.set(variables['bank'])
-        mainTopLevel.deiconify()
-    elif variables['gamemode'] == 2:
-        mainTopLevel.withdraw()
-        contestantList = list(variables['contestants'].keys())
-        for i in range(0, 8):
-            try:
-                voteVar[i].set(contestantList[i])
-            except IndexError:
-                voteButton[i].grid_forget()
-        voteTopLevel.deiconify()
-    variables['gamemode'] = -1 #this only effects the local var not the var on the server
+    global question, status, cur_money, bank, startTopLevel, mainTopLevel, voteTopLevel
+    
+    variables = network.getMessageofType('variables', [socket], False)
+    #only do any processing if variables have been updated
+    if variables:
+        if variables['gamemode'] == 0:
+            voteTopLevel.withdraw()
+            status.set('Round ' + str(variables['cntRounds']) + ' starting')
+            mainTopLevel.deiconify()
+        elif variables['gamemode'] == 1:
+            voteTopLevel.withdraw()
+            status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
+            question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
+            cur_money.set(list(variables['money'])[variables['correct']])
+            bank.set(variables['bank'])
+            mainTopLevel.deiconify()
+        elif variables['gamemode'] == 2:
+            mainTopLevel.withdraw()
+            contestantList = list(variables['contestants'].keys())
+            for i in range(0, 8):
+                try:
+                    voteVar[i].set(contestantList[i])
+                except IndexError:
+                    voteButton[i].grid_forget()
+            voteTopLevel.deiconify()
     
     #run this function again in 100ms
     if mainTopLevel.config()['class'][4] == 'Tk':
