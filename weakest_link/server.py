@@ -1,7 +1,13 @@
 from tkinter import *
 from tkinter import ttk
 from collections import OrderedDict
-import csv, threading, time, sys, network, misc
+import csv, threading, time, sys, importlib.machinery, os.path
+
+path = os.path.dirname(__file__)
+loader = importlib.machinery.SourceFileLoader("network", os.path.join(path, "network.py"))
+network = loader.load_module("network")
+loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
+misc = loader.load_module("misc")
 
 variables = {
     'cntQuestions': 0, #row counter for csv file

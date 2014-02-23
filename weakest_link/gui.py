@@ -1,7 +1,13 @@
 from tkinter import *
 from tkinter import ttk
-import pygame, sys, operator, network, misc, threading
+import pygame, sys, operator, importlib.machinery, os.path
 from pygame.locals import *
+
+path = os.path.dirname(__file__)
+loader = importlib.machinery.SourceFileLoader("network", os.path.join(path, "network.py"))
+network = loader.load_module("network")
+loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
+misc = loader.load_module("misc")
 
 def initPygame():
     global displaySurface, FPS, fpsClock, white, blue, black
@@ -29,8 +35,8 @@ class placeholder():
     def change(self, text=None, font=None, textColour=None):
         if not textColour: textColour = pygame.Color(0, 0, 0)
         if not font: font = pygame.font.SysFont(config['pygame']['font'], int(self.surface.get_height() / 25))
-        if self.active: placeholder = pygame.image.load('redPlaceholder.png')
-        else: placeholder = pygame.image.load('bluePlaceholder.png')
+        if self.active: placeholder = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\redPlaceholder.png'))
+        else: placeholder = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\bluePlaceholder.png'))
         placeholder = pygame.transform.scale(placeholder, (int(self.surface.get_width() / (160 / 27)), int(self.surface.get_height() / (40 / 3))))
         self.surface.blit(placeholder, self.coordinates)
         if text:

@@ -1,6 +1,6 @@
 from datetime import datetime
 from json import load, dump
-from os.path import basename
+import os.path
 import __main__, threading
 
 class threadFunc(threading.Thread):
@@ -15,7 +15,7 @@ class threadFunc(threading.Thread):
         self.end = True
         threading.Thread.join()
 
-def initConfig(fileName='config.json'):
+def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json')):
     #options list here needs to be kept up to date with config fields
     options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "questions.csv", "finalQ": "questions.csv"}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": False}, "pygame": {"font": "microsoftsansserif", "window_title": "The Weakest Link", "fps": 10, "width": 800, "height": 600}}
     
@@ -46,7 +46,7 @@ def initConfig(fileName='config.json'):
 config = initConfig()
 
 def log(text, forceLog=False, fileName=config['debug']['fileName']):
-    logName = basename(__file__)
+    logName = os.path.basename(__file__)
     if config['debug']['log'] or forceLog:
         with open(fileName, 'a') as file:
             file.write(str(datetime.now()) + ' [' + logName + '] ' + text + '\n')

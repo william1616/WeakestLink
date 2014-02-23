@@ -1,6 +1,13 @@
 from tkinter import *
 from tkinter import ttk
-import server, control, gui
+import importlib.machinery
+
+loader = importlib.machinery.SourceFileLoader("server", "./weakest_link/server.py")
+server = loader.load_module("server")
+loader = importlib.machinery.SourceFileLoader("control", "./weakest_link/control.py")
+control = loader.load_module("control")
+loader = importlib.machinery.SourceFileLoader("gui", "./weakest_link/gui.py")
+gui = loader.load_module("gui")
 
 class rootTopLevel(Toplevel):
     def __init__(self, root):
