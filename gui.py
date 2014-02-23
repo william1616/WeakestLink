@@ -31,6 +31,7 @@ class placeholder():
         if not font: font = pygame.font.SysFont(config['pygame']['font'], int(self.surface.get_height() / 25))
         if self.active: placeholder = pygame.image.load('redPlaceholder.png')
         else: placeholder = pygame.image.load('bluePlaceholder.png')
+        placeholder = pygame.transform.scale(placeholder, (int(self.surface.get_width() / (160 / 27)), int(self.surface.get_height() / (40 / 3))))
         self.surface.blit(placeholder, self.coordinates)
         if text:
             self.text = font.render(text, True, textColour)
