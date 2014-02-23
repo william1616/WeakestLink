@@ -45,7 +45,7 @@ def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json
 
 config = initConfig()
 
-def log(text, forceLog=False, fileName=config['debug']['fileName']):
+def log(text, forceLog=False, fileName=os.path.join(os.path.dirname(__file__), '..//', config['debug']['fileName'])):
     logName = os.path.basename(__file__)
     if config['debug']['log'] or forceLog:
         with open(fileName, 'a') as file:

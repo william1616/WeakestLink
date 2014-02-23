@@ -1,23 +1,23 @@
 {
     "debug": {
-        "fileName": "log.txt", 
+        "fileName": "log.txt",
         "log": false
     }, 
     "pygame": {
-        "font": "microsoftsansserif", 
-        "width": 800, 
-        "fps": 10, 
-        "height": 600, 
+        "font": "microsoftsansserif",
+        "width": 800,
+        "fps": 10,
+        "height": 600,
         "window_title": "The Weakest Link"
     }, 
     "questions": {
-        "mainQ": "questions.csv", 
-        "finalQ": "questions.csv"
+        "mainQ": "resources//questions.csv",
+        "finalQ": "resources//questions.csv"
     }, 
     "server": {
         "bindPort": 1024, 
         "bindAddress": "localhost"
-    }, 
+    },
     "Tk": {
         "status_lines": 25, 
         "window_title": "The Weakest Link"
