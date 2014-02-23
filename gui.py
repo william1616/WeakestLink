@@ -178,9 +178,9 @@ def isServerRunning():
     else:
         #run the function every time the system is idle
         if mainTopLevel.config()['class'][4] == 'Tk':
-            mainTopLevel.after_idle(isServerRunning)
+            mainTopLevel.after(100, isServerRunning)
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
-            mainTopLevel.root.after_idle(isServerRunning)
+            mainTopLevel.root.after(100, isServerRunning)
         
 def initTk(parent):
     global address, startFrame, waitFrame, mainTopLevel
