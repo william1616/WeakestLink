@@ -43,7 +43,7 @@ def getMessageofType(type, socketList, waitForMessage=True):
     receivedType, receivedKey = getMessage(socketList, waitForMessage)
     while waitForMessage and receivedType != type:
         receivedType, receivedKey = getMessage(socketList)
-    if receivedKey:
+    if receivedKey and receivedType == type:
         return getMessagefromStack(receivedKey)
     else:
         return None
