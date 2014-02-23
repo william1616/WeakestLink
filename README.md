@@ -28,4 +28,4 @@ gui.py|Connects to the server as a client and displays the game stats
 
 Releases
 ---
-http://github.com/william1616/WeakestLink/Releases
+https://github.com/william1616/WeakestLink/releases
