@@ -8,6 +8,8 @@ loader = importlib.machinery.SourceFileLoader("control", "./weakest_link/control
 control = loader.load_module("control")
 loader = importlib.machinery.SourceFileLoader("gui", "./weakest_link/gui.py")
 gui = loader.load_module("gui")
+loader = importlib.machinery.SourceFileLoader("misc", "./weakest_link/misc.py")
+misc = loader.load_module("misc")
 
 class rootTopLevel(Toplevel):
     def __init__(self, root):
@@ -17,8 +19,7 @@ class rootTopLevel(Toplevel):
 def initTk():
     global root
     root = Tk()
-    root.title('Weakest Link')
-    root.resizable(False, False)
+    root.title(config['Tk']['window_title'])
     
     mainFrame = ttk.Frame(root, padding="3 3 3 3")
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))

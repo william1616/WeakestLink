@@ -71,7 +71,7 @@ def initTk(parent):
     startFrame.rowconfigure(0, weight=1)
 
     address = StringVar()
-    address.set('localhost')
+    address.set(config['server']['bindAddress'])
 
     ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
     ttk.Button(startFrame, text="Exit", command=close).grid(column=2, row=2, sticky=N)
