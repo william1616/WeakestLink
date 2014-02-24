@@ -19,7 +19,7 @@ variables = {
     'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
     'money': [0, 50,100,200,300,400,500,1000,2500,5000],
     'crtContestant': -1, #current contestant key index
-    'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed
+    'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final
     'time': False, #time up
     }
 status = []
@@ -86,7 +86,7 @@ class questionControl(threading.Thread):
         threading.Thread.__init__(self)
         self.newQuestion = False
     def run(self):
-        global socketList
+        global variables, socketList
         while True:
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
@@ -94,6 +94,29 @@ class questionControl(threading.Thread):
                 receivedCommand = network.getMessageofType('cmd', socketList)
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
                     self.newQuestion = True
+            if len(variables['contestants']) == 2:
+                break
+        
+        variables['cntQuestions'] = 0
+        variables['cntRquestions'] = 1
+        for i in list(variables['contestants'].keys()): #set each contestatnts score to 0
+            variables['contestants'][i] = 0
+        statusUpdate('Final Round starting')
+        variables['gamemode'] = 0
+        updateClient()
+        time.sleep(1)
+        
+        while True:
+            self.question, self.awnser = askFinalQuestion()
+            while not self.newQuestion:
+                receivedCommand = network.getMessageofType('cmd', socketList)
+                if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
+                    finalQuestionHandler(receivedCommand, self.question, self.awnser)
+                    self.newQuestion = True
+            if len(variables['contestants']) == 1:
+                statusUpdate(str(list(variables['contestants'])[0]) + ' is the winner!')
+                break
+                
 
 def start():
     global variables, listner
@@ -146,7 +169,7 @@ def close(topLevel):
     topLevel.destroy()
     
 def askQuestion():
-    global variables, questions, status
+    global variables, questions
     
     mainQ = config['questions']['mainQ']
     
@@ -186,7 +209,7 @@ def askQuestion():
         sys.exit()
 
 def questionHandler(event, question, awnser):
-    global variables, socketList, status
+    global variables, socketList
     if event == 1:
         statusUpdate('Correct')
         variables['correct'] += 1
@@ -238,7 +261,77 @@ def questionHandler(event, question, awnser):
         variables['gamemode'] = 1
     updateClient()
     return True
+    
+def askFinalQuestion():
 
+    global variables
+    
+    finalQ = config['questions']['finalQ']
+    
+    #if the questions are not already imported import them
+    try:
+        finalQuestions
+    except:
+        print('Importing Final Questions')
+        finalQuestions = importQuestions(finalQ)
+        
+    #cycle through each contestant in turn
+    if variables['crtContestant'] < len(variables['contestants']) - 1:
+        variables['crtContestant'] += 1
+    else:
+        variables['crtContestant'] = 0
+        
+    #if there are still questions left ask the question
+    if variables['cntQuestions'] < len(finalQuestions):
+        variables['gamemode'] = 3
+        statusUpdate('Final Question ' + str(variables['cntRquestions']))
+        variables['question'] = finalQuestions[variables['cntQuestions']][0]
+        statusUpdate(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
+        updateClient()
+        # return question, awnser
+        return finalQuestions[variables['cntQuestions']][0], finalQuestions[variables['cntQuestions']][1]
+    else:
+        statusUpdate('So this is Embarasing')
+        statusUpdate('We seam to have run out of questions')
+        statusUpdate('Exiting...')
+        sys.exit()
+    
+def finalQuestionHandler(event, question, awnser):
+    global variables, socketList
+    if event == 1:
+        statusUpdate('Correct')
+        variables['contestants'][list(variables['contestants'].keys())[variables['crtContestant']]] += 1
+    elif event == 2:
+        statusUpdate('Incorrect - ' + awnser)
+        if variables['cntRquestions'] > 5:
+            variables['contestants'].pop[list(variables['contestants'].keys())[variables['crtContestant']]]
+    
+    event = ''
+    variables['cntRquestions'] += 1
+    variables['cntQuestions'] += 1
+    variables['gamemode'] = 0
+    updateClient()
+    time.sleep(1)
+    
+    if variables['cntRquestions'] == 5:
+        i = j = 0
+        while i < len(variables['contestants']):
+            if list(variables['contestants'].values())[i] > max:
+                j = list(variables['contestants'].values())[i]
+            if list(variables['contestants'].values())[i] == max:
+                head2head = True
+            i += 1
+        
+        if head2head:
+            statusUpdate('Going to Head to Head Round')
+        else:
+            for key, value in variables['contestants'].iteritems():
+                if value != j:
+                    variables['contestants'].pop(key)
+                    
+    updateClient()
+        
+        
 def importQuestions(file):
     global status
     statusUpdate('Importing Questions...')
@@ -254,7 +347,7 @@ def importQuestions(file):
         statusUpdate('Imported ' + str(cnt) + ' Questions')
         # with statement automatically closes the csv file cleanly even in event of unexpected script termination
         return questions
-
+    
 def updateClient():
     global variables, socketList
     try:
