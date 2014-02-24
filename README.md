@@ -22,9 +22,11 @@ File Structure
 File|Ussage
 ----|------
 main.py|Main menu which allows running of all other programs through a gui
-server.py|Server file which runs the gamecode and controls client programs
-control.py|Connects to server as a client and controls gameflow
-gui.py|Connects to the server as a client and displays the game stats
+weakest_link/server.py|Server file which runs the gamecode and controls client programs
+weakest_link/control.py|Connects to server as a client and controls gameflow
+weakest_link/gui.py|Connects to the server as a client and displays the game stats
+weakest_link/network.py|Networking API wraping socket libary
+weakest_link/misc.py|Miscellaneous API containting mostly file related functions 
 
 Releases
 ---
