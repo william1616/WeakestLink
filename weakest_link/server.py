@@ -16,7 +16,8 @@ variables = {
     'cntRquestions': 1, #question counter per round
     'bank': 0,
     'question': '',
-    'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
+#    'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
+    'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0}), #list of contestants creating OrderedDict randomises the order
     'money': [0, 50,100,200,300,400,500,1000,2500,5000],
     'crtContestant': -1, #current contestant key index
     'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final
@@ -89,11 +90,10 @@ class questionControl(threading.Thread):
         global variables, socketList
         while True:
             self.question, self.awnser = askQuestion()
-            self.newQuestion = False
-            while not self.newQuestion:
+            while True:
                 receivedCommand = network.getMessageofType('cmd', socketList)
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
-                    self.newQuestion = True
+                    break
             if len(variables['contestants']) == 2:
                 break
         
@@ -108,11 +108,11 @@ class questionControl(threading.Thread):
         
         while True:
             self.question, self.awnser = askFinalQuestion()
-            while not self.newQuestion:
+            while True:
                 receivedCommand = network.getMessageofType('cmd', socketList)
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
                     finalQuestionHandler(receivedCommand, self.question, self.awnser)
-                    self.newQuestion = True
+                    break
             if len(variables['contestants']) == 1:
                 statusUpdate(str(list(variables['contestants'])[0]) + ' is the winner!')
                 break
@@ -171,7 +171,7 @@ def close(topLevel):
 def askQuestion():
     global variables, questions
     
-    mainQ = config['questions']['mainQ']
+    mainQ = os.path.join(path, "..\\", config['questions']['mainQ'])
     
     #if the questions are not already imported import them
     try:
@@ -263,10 +263,9 @@ def questionHandler(event, question, awnser):
     return True
     
 def askFinalQuestion():
-
-    global variables
+    global variables, finalQuestions
     
-    finalQ = config['questions']['finalQ']
+    finalQ = os.path.join(path, "..\\", config['questions']['finalQ'])
     
     #if the questions are not already imported import them
     try:
@@ -303,7 +302,7 @@ def finalQuestionHandler(event, question, awnser):
         variables['contestants'][list(variables['contestants'].keys())[variables['crtContestant']]] += 1
     elif event == 2:
         statusUpdate('Incorrect - ' + awnser)
-        if variables['cntRquestions'] > 5:
+        if variables['cntRquestions'] > 3:
             variables['contestants'].pop[list(variables['contestants'].keys())[variables['crtContestant']]]
     
     event = ''
@@ -313,22 +312,25 @@ def finalQuestionHandler(event, question, awnser):
     updateClient()
     time.sleep(1)
     
-    if variables['cntRquestions'] == 5:
+    if variables['cntRquestions'] == 3:
         i = j = 0
-        while i < len(variables['contestants']):
-            if list(variables['contestants'].values())[i] > max:
+        head2head = False
+        while i < len(variables['contestants']):            
+            if list(variables['contestants'].values())[i] > j:
                 j = list(variables['contestants'].values())[i]
-            if list(variables['contestants'].values())[i] == max:
+            elif list(variables['contestants'].values())[i] == j and j != 0:
                 head2head = True
             i += 1
         
         if head2head:
             statusUpdate('Going to Head to Head Round')
         else:
-            for key, value in variables['contestants'].iteritems():
+            for key, value in dict(variables['contestants']).items():
                 if value != j:
+                    statusUpdate(key + ' you are the Weakest Link! Goodbye')
                     variables['contestants'].pop(key)
                     
+    variables['gamemode'] = 4
     updateClient()
         
         
