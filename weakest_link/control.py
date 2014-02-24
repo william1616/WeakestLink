@@ -35,10 +35,26 @@ def removeContestant(contestantIndex):
     global voteFrame, mainFrame, socket
     voteTopLevel.withdraw()
     mainTopLevel.deiconify()
-    network.sendMessage('cmd', contestantIndex, socket)
+    sendCommand(contestantIndex)
+    
 
+def sendCommand(cmd):
+    global socket
+    disableButton()
+    network.sendMessage('cmd', cmd, socket)
+    
+def enableButton():
+    global button
+    for key, value in button.items():
+        value.config(state='normal')
+        
+def disableButton():
+    global button
+    for key, value in button.items():
+        value.config(state='disabled')
+    
 def initTk(parent):
-    global address, question, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame
+    global address, question, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, button
 
     mainTopLevel = parent
     parent.title(config['Tk']['window_title'])
@@ -78,10 +94,17 @@ def initTk(parent):
     ttk.Label(mainFrame, text='Bank: ').grid(column=4, row=2, sticky=N)
     ttk.Label(mainFrame, textvariable=cur_money).grid(column=5, row=1, sticky=N)
     ttk.Label(mainFrame, textvariable=bank).grid(column=5, row=2, sticky=N)
-    ttk.Button(mainFrame, text="Correct", command=lambda: network.sendMessage('cmd', 1, socket)).grid(column=2, row=1, sticky=N)
-    ttk.Button(mainFrame, text="Incorrect", command=lambda: network.sendMessage('cmd', 2, socket)).grid(column=2, row=2, sticky=N)
-    ttk.Button(mainFrame, text="Bank", command=lambda: network.sendMessage('cmd', 3, socket)).grid(column=3, row=2, sticky=N)
-    ttk.Button(mainFrame, text="Time Up", command=lambda: network.sendMessage('cmd', 4, socket)).grid(column=3, row=1, sticky=N)
+    
+    button = {}
+    
+    button['correct'] = ttk.Button(mainFrame, text="Correct", command=lambda: sendCommand(1))
+    button['correct'].grid(column=2, row=1, sticky=N)
+    button['incorrect'] = ttk.Button(mainFrame, text="Incorrect", command=lambda: sendCommand(2))
+    button['incorrect'].grid(column=2, row=2, sticky=N)
+    button['bank'] = ttk.Button(mainFrame, text="Bank", command=lambda: sendCommand(3))
+    button['bank'].grid(column=3, row=2, sticky=N)
+    button['time'] = ttk.Button(mainFrame, text="Time Up", command=lambda: sendCommand(4))
+    button['time'].grid(column=3, row=1, sticky=N)
     
     voteTopLevel = Toplevel(parent)
     voteTopLevel.title(config['Tk']['window_title'])
@@ -128,6 +151,7 @@ def variableUpdates():
     variables = network.getMessageofType('variables', [socket], False)
     #only do any processing if variables have been updated
     if variables:
+        disableButton()
         if variables['gamemode'] == 0:
             voteTopLevel.withdraw()
             status.set('Round ' + str(variables['cntRounds']) + ' starting')
@@ -139,6 +163,7 @@ def variableUpdates():
             cur_money.set(list(variables['money'])[variables['correct']])
             bank.set(variables['bank'])
             mainTopLevel.deiconify()
+            enableButton()
         elif variables['gamemode'] == 2:
             mainTopLevel.withdraw()
             contestantList = list(variables['contestants'].keys())

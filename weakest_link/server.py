@@ -258,7 +258,7 @@ def questionHandler(event, question, awnser):
                 variables['gamemode'] = 3
                 updateClient()
                 break
-        variables['gamemode'] = 1
+    variables['gamemode'] = 1
     updateClient()
     return True
     
