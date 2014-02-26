@@ -144,11 +144,12 @@ def initTk(parent):
 
 def close():
     global mainTopLevel, startTopLevel, voteTopLevel
-    if mainTopLevel.config()['class'][4] == 'Toplevel': mainTopLevel.root.deiconify()
-    mainTopLevel.destroy()
     startTopLevel.destroy()
     voteTopLevel.destroy()
-        
+    if mainTopLevel.config()['class'][4] == 'Toplevel': 
+        mainTopLevel.root.deiconify()
+    mainTopLevel.destroy()
+    
 def variableUpdates():
     global question, status, cur_money, bank, startTopLevel, mainTopLevel, voteTopLevel
     
