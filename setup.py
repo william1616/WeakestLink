@@ -27,8 +27,8 @@ with open('build\\buildData.json', 'w') as file:
 # fine tuning.
 buildOptions = dict(packages = ['network', 'misc', 'control', 'gui', 'server', 'tkinter', 'csv', 'threading', 'time', 'sys', 'json', 'os', 'network', 'datetime', 'math', 'operator', 'pygame', 'collections', 'hashlib'], 
     excludes = [], 
-    path = sys.path.extend(os.path.dirname(os.path.abspath(__file__))),
-    include_files = [('config.json',''), ('questions.csv',''), ('redPlaceholder.png',''), ('bluePlaceholder.png','')],
+    path = sys.path.extend([os.path.abspath(os.path.dirname(__file__)), os.path.abspath(os.path.join(os.path.dirname(__file__), './/weakest_link'))]),
+    include_files = [('config.json',''), ('resources//questions.csv','resources//questions.csv'), ('resources//redPlaceholder.png','resources//redPlaceholder.png'), ('resources//bluePlaceholder.png','resources//bluePlaceholder.png')],
     create_shared_zip = True,
     compressed = True,
     build_exe = 'build\\' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + ' ' + versionName)

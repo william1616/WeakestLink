@@ -1,13 +1,17 @@
 from tkinter import *
 from tkinter import ttk
-import pygame, sys, operator, importlib.machinery, os.path
+import pygame, sys, operator, os.path
 from pygame.locals import *
 
 path = os.path.dirname(__file__)
-loader = importlib.machinery.SourceFileLoader("network", os.path.join(path, "network.py"))
-network = loader.load_module("network")
-loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
-misc = loader.load_module("misc")
+try:
+    import network, misc
+except ImportError:
+    import importlib.machinery
+    loader = importlib.machinery.SourceFileLoader("network", os.path.join(path, "network.py"))
+    network = loader.load_module("network")
+    loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
+    misc = loader.load_module("misc")
 
 def initPygame():
     global displaySurface, FPS, fpsClock, white, blue, black
