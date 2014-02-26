@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox, simpledialog
 from collections import OrderedDict
 import csv, threading, time, sys, os.path
 
@@ -95,12 +95,12 @@ class questionControl(threading.Thread):
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
             while not self.newQuestion:
-                receivedCommand = network.getMessageofType('cmd', socketList)
+                receivedCommand = network.getMessageofType('cmd', socketList, False)
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
                     self.newQuestion = True
 
 def start():
-    global variables, listner
+    global variables, listner, questionThread
     listner.stopListner(True)
     startFrame.grid_remove()
     mainFrame.grid()
@@ -122,6 +122,26 @@ def initTk(parent):
     startFrame.columnconfigure(0, weight=1)
     startFrame.rowconfigure(0, weight=1)
 
+    startMenu = Menu(parent)
+    parent['menu'] = startMenu
+    startFile = Menu(startMenu, tearoff=0)
+    startTools = Menu(startMenu, tearoff=0)
+    startHelp = Menu(startMenu, tearoff=0)
+    startMenu.add_cascade(menu=startFile, label='File')
+    startMenu.add_cascade(menu=startTools, label='Tools')
+    startMenu.add_cascade(menu=startHelp, label='Help')
+    
+    startFile.add_command(label='Exit', command=lambda: close(parent))
+    
+    startTools.add_command(label='Select Main Question File', command=selectMainQuestionFile)
+    startTools.add_command(label='Select Final Question File', command=selectFinalQuestionFile)
+    startTools.add_command(label='Goto Question', command=gotoQuestion)
+    startTools.add_separator()
+    startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
+    
+    startHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
+    
+    
     mainFrame = ttk.Frame(parent, padding="3 3 3 3")
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     mainFrame.columnconfigure(0, weight=1)
@@ -144,6 +164,23 @@ def initTk(parent):
     
     print('GUI Initiated')
 
+def gotoQuestion():
+    global variables, questionThread
+    variables['cntQuestions'] = simpledialog.askinteger("Go to question...", "Question Number:", initialvalue=variables['cntQuestions'])
+    questionThread.newQuestion = True
+    
+def selectMainQuestionFile():
+    global config
+    #this needs to be validated
+    config['questions']['mainQ'] = filedialog.askopenfilename()
+    misc.writeConfig(config)
+    
+def selectFinalQuestionFile():
+    global config
+    #this needs to be validated
+    config['questions']['finalQ'] = filedialog.askopenfilename()
+    misc.writeConfig(config)
+    
 def close(topLevel):
     listner.stopListner(True)
     if topLevel.config()['class'][4] == 'Toplevel': topLevel.root.deiconify()

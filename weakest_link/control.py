@@ -1,6 +1,5 @@
 from tkinter import *
-from tkinter import ttk
-from tkinter import filedialog
+from tkinter import ttk, filedialog, messagebox
 import time, math, os.path
 
 path = os.path.dirname(__file__)
@@ -72,9 +71,9 @@ def initTk(parent):
     
     startMenu = Menu(startTopLevel)
     startTopLevel['menu'] = startMenu
-    startFile = Menu(startMenu)
-    startTools = Menu(startMenu)
-    startHelp = Menu(startMenu)
+    startFile = Menu(startMenu, tearoff=0)
+    startTools = Menu(startMenu, tearoff=0)
+    startHelp = Menu(startMenu, tearoff=0)
     startMenu.add_cascade(menu=startFile, label='File')
     startMenu.add_cascade(menu=startTools, label='Tools')
     startMenu.add_cascade(menu=startHelp, label='Help')
@@ -83,6 +82,11 @@ def initTk(parent):
     
     startTools.add_command(label='Select Main Question File', command=selectMainQuestionFile)
     startTools.add_command(label='Select Final Question File', command=selectFinalQuestionFile)
+    startTools.add_command(label='Go to Question', command=gotoQuestion)
+    startTools.add_separator()
+    startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
+    
+    startHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
     
     startFrame = ttk.Frame(startTopLevel, padding="3 3 3 3")
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
@@ -157,13 +161,18 @@ def initTk(parent):
     startTopLevel.protocol("WM_DELETE_WINDOW", close)
     voteTopLevel.protocol("WM_DELETE_WINDOW", close)
 
+def gotoQuestion():
+    pass
+    
 def selectMainQuestionFile():
     global config
+    #this needs to be transmitted to server and validated
     config['questions']['mainQ'] = filedialog.askopenfilename()
     misc.writeConfig(config)
     
 def selectFinalQuestionFile():
     global config
+    #this needs to be transmitted to server and validated
     config['questions']['finalQ'] = filedialog.askopenfilename()
     misc.writeConfig(config)
     
