@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import filedialog
 import time, math, os.path
 
 path = os.path.dirname(__file__)
@@ -69,14 +70,28 @@ def initTk(parent):
     startTopLevel.title(config['Tk']['window_title'])
     startTopLevel.resizable(False, False)
     
+    startMenu = Menu(startTopLevel)
+    startTopLevel['menu'] = startMenu
+    startFile = Menu(startMenu)
+    startTools = Menu(startMenu)
+    startHelp = Menu(startMenu)
+    startMenu.add_cascade(menu=startFile, label='File')
+    startMenu.add_cascade(menu=startTools, label='Tools')
+    startMenu.add_cascade(menu=startHelp, label='Help')
+    
+    startFile.add_command(label='Exit', command=close)
+    
+    startTools.add_command(label='Select Main Question File', command=selectMainQuestionFile)
+    startTools.add_command(label='Select Final Question File', command=selectFinalQuestionFile)
+    
     startFrame = ttk.Frame(startTopLevel, padding="3 3 3 3")
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     startFrame.columnconfigure(0, weight=1)
     startFrame.rowconfigure(0, weight=1)
-
+    
     address = StringVar()
     address.set(config['server']['bindAddress'])
-
+    
     ttk.Button(startFrame, text="Connect", command=start).grid(column=1, row=2, sticky=N)
     ttk.Button(startFrame, text="Exit", command=close).grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
@@ -142,6 +157,16 @@ def initTk(parent):
     startTopLevel.protocol("WM_DELETE_WINDOW", close)
     voteTopLevel.protocol("WM_DELETE_WINDOW", close)
 
+def selectMainQuestionFile():
+    global config
+    config['questions']['mainQ'] = filedialog.askopenfilename()
+    misc.writeConfig(config)
+    
+def selectFinalQuestionFile():
+    global config
+    config['questions']['finalQ'] = filedialog.askopenfilename()
+    misc.writeConfig(config)
+    
 def close():
     global mainTopLevel, startTopLevel, voteTopLevel
     if mainTopLevel.config()['class'][4] == 'Toplevel': mainTopLevel.root.deiconify()
