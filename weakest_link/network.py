@@ -1,9 +1,13 @@
-import socket, hashlib, select, json, importlib.machinery, os.path
+import socket, hashlib, select, json, os.path
 from collections import OrderedDict
 
 path = os.path.dirname(__file__)
-loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
-misc = loader.load_module("misc")
+try:
+    import misc
+except ImportError:
+    import importlib.machinery
+    loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
+    misc = loader.load_module("misc")
 
 debug = True
 uID = 1
