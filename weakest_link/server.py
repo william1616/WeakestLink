@@ -61,7 +61,7 @@ class serverListner (threading.Thread):
     def startListner(self):
         global status
         if not self.running:
-            self.serversocket = network.localServer()
+            self.serversocket = network.initServerSocket(config['server']['bindAddress'],config['server']['bindPort'])
             self.running = True
             statusUpdate('Started Listner')
         else:
