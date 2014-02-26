@@ -39,10 +39,13 @@ def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json
                 return config
         except:
             print('Overwritting config file')
-            with open(fileName, 'w') as configFile:
-                dump(options, configFile, indent=4)
+            writeConfig(options, fileName)
             return options
 
+def writeConfig(config, fileName=os.path.join(os.path.dirname(__file__), '..\\config.json')):
+    with open(fileName, 'w') as configFile:
+        dump(config, configFile, indent=4)
+            
 config = initConfig()
 
 def log(text, forceLog=False, fileName=os.path.join(os.path.dirname(__file__), '..//', config['debug']['fileName'])):
