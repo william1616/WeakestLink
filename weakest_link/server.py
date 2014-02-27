@@ -89,9 +89,10 @@ class questionControl(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.newQuestion = False
+        self.end = False
     def run(self):
         global socketList
-        while True:
+        while not self.end:
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
             while not self.newQuestion:
@@ -183,6 +184,8 @@ def selectFinalQuestionFile():
     
 def close(topLevel):
     listner.stopListner(True)
+    questionThread.newQuestion = questionThread.end = True
+    questionThread.join()
     if topLevel.config()['class'][4] == 'Toplevel': topLevel.root.deiconify()
     topLevel.destroy()
     

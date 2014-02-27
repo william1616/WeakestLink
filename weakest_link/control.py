@@ -213,12 +213,16 @@ def variableUpdates():
                     voteButton[i].grid_forget()
             voteTopLevel.deiconify()
     
-    #run this function again in 100ms
-    if mainTopLevel.config()['class'][4] == 'Tk':
-        mainTopLevel.after(100, variableUpdates)
-    elif mainTopLevel.config()['class'][4] == 'Toplevel':
-        mainTopLevel.root.after(100, variableUpdates)
-        
+    try:
+        #run this function again in 100ms
+        if mainTopLevel.config()['class'][4] == 'Tk':
+            mainTopLevel.after(100, variableUpdates)
+        elif mainTopLevel.config()['class'][4] == 'Toplevel':
+            mainTopLevel.root.after(100, variableUpdates)
+    except TclError:
+        #dont call the function again
+        pass
+
 def setup():
     global config
     print('Importing Config...')
