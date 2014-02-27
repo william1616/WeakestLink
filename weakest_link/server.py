@@ -90,12 +90,14 @@ class questionControl(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.newQuestion = False
+        self.end = False
     def run(self):
-        global variables, socketList
-        while True:
+        global socketList
+        while not self.end:
             self.question, self.awnser = askQuestion()
-            while True:
-                receivedCommand = network.getMessageofType('cmd', socketList)
+            self.newQuestion = False
+            while not self.newQuestion:
+                receivedCommand = network.getMessageofType('cmd', socketList, False)
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
                     break
             if len(variables['contestants']) == 2:
@@ -123,7 +125,7 @@ class questionControl(threading.Thread):
                 
 
 def start():
-    global variables, listner
+    global variables, listner, questionThread
     listner.stopListner(True)
     startFrame.grid_remove()
     mainFrame.grid()
@@ -169,6 +171,8 @@ def initTk(parent):
 
 def close(topLevel):
     listner.stopListner(True)
+    questionThread.newQuestion = questionThread.end = True
+    questionThread.join()
     if topLevel.config()['class'][4] == 'Toplevel': topLevel.root.deiconify()
     topLevel.destroy()
     
