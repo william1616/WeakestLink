@@ -122,8 +122,8 @@ def initTk(parent):
     finalScore1 = IntVar()
     finalScore2 = IntVar()
 
-    ttk.Label(finalTopLevel, textvariable=status, width=100, background='red').grid(column=1, row=1, sticky=N)
-    ttk.Label(finalTopLevel, textvariable=question, width=100).grid(column=1, row=2, sticky=N)
+    ttk.Label(finalTopLevel, textvariable=finalStatus, width=100, background='red').grid(column=1, row=1, sticky=N)
+    ttk.Label(finalTopLevel, textvariable=finalQuestion, width=100).grid(column=1, row=2, sticky=N)
     ttk.Label(finalTopLevel, textvariable=finalName1).grid(column=5, row=1, sticky=N)
     ttk.Label(finalTopLevel, textvariable=finalName2).grid(column=5, row=2, sticky=N)
     ttk.Label(finalTopLevel, textvariable=finalScore1).grid(column=6, row=1, sticky=N)
@@ -182,13 +182,14 @@ def variableUpdates():
     #only do any processing if variables have been updated
     if variables:
         disableButton()
-        if variables['gamemode'] == 0:
+        if len(variables['contestants']) == 1:
+            finalStatus.set(str(list(variables['contestants'])[0]) + ' is the winner!')
+            finalQuestion.set('')
+        elif variables['gamemode'] == 0:
             voteTopLevel.withdraw()
             if len(variables['contestants']) == 2:
-                print('final')
-                status.set('Final Round starting')
-                finalStatus.set('Final Round starting')
                 mainTopLevel.withdraw()
+                finalStatus.set('Final Round starting')
                 finalTopLevel.deiconify()
             else:
                 status.set('Round ' + str(variables['cntRounds']) + ' starting')
@@ -210,12 +211,13 @@ def variableUpdates():
                 except IndexError:
                     voteButton[i].grid_forget()
             voteTopLevel.deiconify()
-        elif variables['gamemode'] == 3:
+        elif variables['gamemode'] == 4:
             voteTopLevel.withdraw()
             finalStatus.set('Final Question ' + str(variables['cntRquestions']))
             finalQuestion.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
-            finalName1.set(list(variables['contestants'].keys())[0])
-            finalName2.set(list(variables['contestants'].keys())[1])
+            if finalName1.get() == '':
+                finalName1.set(list(variables['contestants'].keys())[0])
+                finalName2.set(list(variables['contestants'].keys())[1])
             finalScore1.set(list(variables['contestants'].values())[0])
             finalScore2.set(list(variables['contestants'].values())[1])
             finalTopLevel.deiconify()
