@@ -183,7 +183,7 @@ def askQuestion():
     mainQ = os.path.join(path, "..\\", config['questions']['mainQ'])
     
     #if the questions are not already imported import them
-    if not 'questions' in globals:
+    if not 'questions' in globals():
         print('Importing Questions')
         questions = importQuestions(mainQ)
     
@@ -310,7 +310,7 @@ def finalQuestionHandler(event, question, awnser):
         statusUpdate('Incorrect - ' + awnser)
         #if head2head remove the first incorect awnsering contestant
         if variables['cntRquestions'] > config['questions']['finalRndQCnt']:
-            variables['contestants'].pop[list(variables['contestants'].keys())[variables['crtContestant']]]
+            variables['contestants'].pop(list(variables['contestants'].keys())[variables['crtContestant']])
     
     if variables['cntRquestions'] == config['questions']['finalRndQCnt']:
         i = topScore = 0
@@ -322,11 +322,13 @@ def finalQuestionHandler(event, question, awnser):
                 head2head = True
             i += 1
         
-        updateClient()
-        
         if head2head:
             statusUpdate('Going to Head to Head Round')
+            variables['gamemode'] = 5
+            updateClient()
+            time.sleep(1)
         else:
+            updateClient()
             for key, value in dict(variables['contestants']).items():
                 if value != topScore:
                     statusUpdate(key + ' you are the Weakest Link! Goodbye')
