@@ -547,7 +547,7 @@ def finalQuestionHandler(event, question, awnser, gameController):
         gameController.finalIncorrect()
     if gameController.getRQuestionNo() == config['questions']['finalRndQCnt']: #if all final questions have been asked determine the winner or go head2head
         gameController.detFinalEnd()
-    
+
 def importQuestions(file):
     global status
     statusUpdate('Importing Questions...')
