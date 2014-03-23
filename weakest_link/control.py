@@ -222,6 +222,9 @@ def variableUpdates():
             finalScore2.set(list(variables['contestants'].values())[1])
             finalTopLevel.deiconify()
             enableButton()
+        elif variables['gamemode'] == 5:
+            finalStatus.set('Going to Head to Head Round')
+            finalQuestion.set('')
     
     try:
         #run this function again in 100ms
