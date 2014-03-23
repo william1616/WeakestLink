@@ -29,14 +29,13 @@ def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json
                 value = options.get(key)
                 if key in config:
                     for subkey in value:
-                        subvalue = value.get(subkey)
                         if not subkey in config[key]:
-                            print('Cannot find key [' + key + '][' + subkey + ' in ConfigFile')
+                            print('Cannot find key [' + key + '][' + subkey + '] in ConfigFile')
                             raise
                 else:
                     print('Cannot find key [' + key + '] in ConfigFile')
                     raise
-                return config
+            return config
         except:
             print('Overwritting config file')
             with open(fileName, 'w') as configFile:
