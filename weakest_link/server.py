@@ -1,4 +1,4 @@
-from tkinter import *
+ from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from collections import OrderedDict
 import csv, threading, time, sys, os.path
@@ -172,16 +172,18 @@ def gotoQuestion():
     
 def selectMainQuestionFile():
     global config
-    #this needs to be validated
-    config['questions']['mainQ'] = filedialog.askopenfilename()
+    file = filedialog.askopenfilename(title="Open Question File", initialdir=os.path.expanduser("~"), filetypes=[("CSV Files", "*.csv")])
+    if file:
+        config['questions']['mainQ'] = file
     misc.writeConfig(config)
     
 def selectFinalQuestionFile():
     global config
-    #this needs to be validated
-    config['questions']['finalQ'] = filedialog.askopenfilename()
+    file = filedialog.askopenfilename(title="Open Question File", initialdir=os.path.expanduser("~"), filetypes=[("CSV Files", "*.csv")])
+    if file:
+        config['questions']['finalQ'] = file
     misc.writeConfig(config)
-    
+
 def close(topLevel):
     listner.stopListner(True)
     questionThread.newQuestion = questionThread.end = True
@@ -240,16 +242,16 @@ def questionHandler(event, question, awnser):
         variables['correct'] = 0
     elif event == 3:
         variables['bank'] += variables['money'][variables['correct']]
-        statusUpdate('Banked £' + str(variables['money'][variables['correct']]))
-        statusUpdate('£' + str(variables['bank']) + ' now in bank')
+        statusUpdate('Banked Â£' + str(variables['money'][variables['correct']]))
+        statusUpdate('Â£' + str(variables['bank']) + ' now in bank')
         variables['correct'] = 0
-        statusUpdate('You now have £' + str(variables['money'][variables['correct']]))
+        statusUpdate('You now have Â£' + str(variables['money'][variables['correct']]))
         updateClient()
         return False
     elif event == 4:
         variables['time'] = True
         statusUpdate('Time Up')
-        statusUpdate('You have £' + str(variables['bank']) + ' in the bank')
+        statusUpdate('You have Â£' + str(variables['bank']) + ' in the bank')
         variables['cntRounds'] += 1
         variables['correct'] = variables['cntRquestions'] = 0
     event = ''
@@ -257,11 +259,11 @@ def questionHandler(event, question, awnser):
     variables['cntQuestions'] += 1
     if variables['correct'] == len(variables['money']) - 1:
         statusUpdate('You have got all questions in round ' + str(variables['cntRounds']) + ' correct')
-        statusUpdate('You have £' + str(variables['bank']) + ' in the bank')
+        statusUpdate('You have Â£' + str(variables['bank']) + ' in the bank')
         variables['cntRounds'] += 1
         variables['cntRquestions'] = 1
         variables['correct'] = 0
-    statusUpdate('You now have £' + str(variables['money'][variables['correct']]))
+    statusUpdate('You now have Â£' + str(variables['money'][variables['correct']]))
     if variables['cntRquestions'] == 1:
         variables['gamemode'] = 2
         statusUpdate('You must now choose the Weakest Link')
@@ -321,3 +323,4 @@ if __name__ == '__main__':
     initTk(root)
     initListner()
     root.mainloop()
+
