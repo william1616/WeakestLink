@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from collections import OrderedDict
+from operator import itemgetter
 import csv, threading, time, sys, os.path
 
 path = os.path.dirname(__file__)
@@ -151,6 +152,18 @@ def close(topLevel):
     questionThread.join()
     if topLevel.config()['class'][4] == 'Toplevel': topLevel.root.deiconify()
     topLevel.destroy()
+
+def getListFromColumn(unsortedList, columnNo, value):
+    sortedList = sorted(unsortedList, key=itemgetter(columnNo))
+    returnList = []
+    for i in range(0, len(sortedList)):
+        if sortedList[i][columnNo] == value:
+            break
+    for j in range(i, len(sortedList)):
+        if sortedList[j][columnNo] != value:
+            break
+        returnList.append(sortedList[j])
+    return returnList
     
 def askQuestion():
     global variables, questions, status
@@ -158,12 +171,14 @@ def askQuestion():
     mainQ = os.path.join(path, "..\\", config['questions']['mainQ'])
     
     #if the questions are not already imported import them
-    try:
-        questions
-    except:
+    if variables['cntRquestions'] == 1 and config['questions']['sortQuestions'] == True:
+        print('Importing Questions for Round ', variables['cntRounds'])
+        questions = getListFromColumn(importQuestions(mainQ), 2, variables['cntRounds'])
+        variables['questions'] = 0
+    elif not 'questions' in globals():
         print('Importing Questions')
         questions = importQuestions(mainQ)
-    
+   
     #cycle through each contestant in turn
     if variables['crtContestant'] < len(variables['contestants']) - 1:
         variables['crtContestant'] += 1
@@ -255,9 +270,11 @@ def importQuestions(file):
         questionfile = csv.reader(csvfile)
         for row in questionfile:
             # where row[0] = questions & row[1] = awnser
-            if row[0] and row[1]:
+            if row[0] and row[1] and row[2]:
+                questions.append([row[0], row[1], int(row[2])])
+            elif row[0] and row[1]:
                 questions.append([row[0], row[1]])
-                cnt += 1
+            cnt += 1
         statusUpdate('Imported ' + str(cnt) + ' Questions')
         # with statement automatically closes the csv file cleanly even in event of unexpected script termination
         return questions
