@@ -77,8 +77,6 @@ def wrapText(surface, coordinates, text, font, textColour):
         surface.blit(textSurface, (rect.left, y))
         y += fontHeight + lineSpacing
         text = text[i:]
-
-    return text
     
 def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
     displaySurface.fill(blue)
@@ -91,7 +89,7 @@ def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
     moneyPlaceholder = {}
 
     for value in money:
-            moneyPlaceholder[value] = placeholder(displaySurface, ((int(displaySurface.get_width() / 80)), int((displaySurface.get_height()  / 60) + (displaySurface.get_height()  / (120 / 11)) * money.index(value))), '£' + str(value), textColour = white)
+        moneyPlaceholder[value] = placeholder(displaySurface, ((int(displaySurface.get_width() / 80)), int((displaySurface.get_height()  / 60) + (displaySurface.get_height()  / (120 / 11)) * money.index(value))), '£' + str(value), textColour = white)
     
     money.reverse()
 
@@ -107,6 +105,37 @@ def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
 
     wrapText(displaySurface, (int(displaySurface.get_width() / (120 / 31)), int(titleRect.bottom + (displaySurface.get_height()  / 80)), int(displaySurface.get_width() - (displaySurface.get_width() / (40 /11))), int(displaySurface.get_height()  - (titleRect.height + (displaySurface.get_height()  / 80)))), question, mainFont, black)
 
+def drawFinalQuestion(questionCnt, question, contestants):
+    displaySurface.fill(blue)
+    mainFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / 15))
+    titleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / (120 / 11)))
+    titleFont.set_underline(True)
+    
+    titleText = titleFont.render('Final Round Question ' + str(questionCnt), True, black)
+    titleRect = titleText.get_rect()
+    titleRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height()  / 80))
+    displaySurface.blit(titleText, titleRect)
+    
+    wrapText(displaySurface, (int(displaySurface.get_width() / 80), int(titleRect.bottom + (displaySurface.get_height()  / 80)), int(displaySurface.get_width() - (displaySurface.get_width() / 80)), int(displaySurface.get_height()  - (titleRect.height + (displaySurface.get_height()) * 3 / 7))), question, mainFont, black)
+    
+    mainText = mainFont.render(contestants[0] + ':', True, black)
+    mainRect = mainText.get_rect()
+    mainRect.topright = (int(displaySurface.get_width() / 7), int((displaySurface.get_height() - titleRect.height) * 5 / 7))
+    displaySurface.blit(mainText, mainRect)
+    
+    mainText = mainFont.render(contestants[1] + ':', True, black)
+    mainRect = mainText.get_rect()
+    mainRect.topright = (int(displaySurface.get_width() / 7), int((displaySurface.get_height() - titleRect.height) * 6 / 7))
+    displaySurface.blit(mainText, mainRect)
+    
+    awnserPlaceholder1 = {}
+    awnserPlaceholder2 = {}
+    
+    for i in range(2, 7):
+        awnserPlaceholder1[i] = placeholder(displaySurface, (int(displaySurface.get_width() * ((i) / 7)), int((displaySurface.get_height() - titleRect.height) * 5 / 7)), 'yes')
+        awnserPlaceholder2[i] = placeholder(displaySurface, (int(displaySurface.get_width() * ((i) / 7)), int((displaySurface.get_height() - titleRect.height) * 6 / 7)), 'no')
+        
+    
 def drawTime(round, contestants):
     drawEnd(round, contestants, 'Time Up')
 
@@ -149,6 +178,30 @@ def drawEnd(round, contestants, line1):
             y += int(displaySurface.get_height() / 16)
         displaySurface.blit(contestant, contestantRect)
     
+def drawRoundStart(round):
+    drawStart("Round " + round + " Starting")
+    
+def drawFinalStart(contestants):
+    drawStart("Final Round Starting", contestants[0] + " vs " + contestants[1])
+    
+def drawHead2HeadStart():
+    drawStart("Going to Head to Head Round")
+    
+def drawStart(text1, text2=None):
+    displaySurface.fill(blue)
+    subTitleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height() / (160 / 11)))
+    
+    text1 = subTitleFont.render(text1, True, black)
+    textRect1 = text1.get_rect()
+    textRect1.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() * 1 / 3))
+    displaySurface.blit(text1, textRect1)
+    
+    if text2:
+        text2 = subTitleFont.render(text2, True, black)
+        textRect2 = text2.get_rect()
+        textRect2.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() * 2 / 3))
+        displaySurface.blit(text2, textRect2)
+
 def gameLoop():
     global socket
     end = False
@@ -161,12 +214,22 @@ def gameLoop():
         if end: break
         variables = network.getMessageofType('variables', [socket], False)
         if variables:
-            if variables['correct'] == len(variables['money']) - 1:
+            if variables['gamemode'] == 0:
+                if len(variables['contestants']) == 2:
+                    drawFinalStart(list(variables['contestants'].keys()))
+                else:
+                    drawRoundStart(variables['cntRounds'])
+            elif variables['gamemode'] == 2 and variables['correct'] == len(variables['money']) - 1:
                 drawCorrect(variables['cntRounds'], variables['contestants'])
-            elif variables['time']:
+            elif variables['gamemode'] == 2 and variables['time']:
                 drawTime(variables['cntRounds'], variables['contestants'])
-            else:
+            elif variables['gamemode'] == 1:
                 drawQuestion(variables['cntRounds'], variables['cntRquestions'], variables['question'], variables['correct'], variables['money'], variables['bank'])
+            elif variables['gamemode'] == 4:
+                drawFinalQuestion(variables['cntRquestions'], variables['question'], list(variables['contestants'].keys()))
+            elif variables['gamemode'] == 5:
+                ##head to head round
+                pass
         pygame.display.update()
         fpsClock.tick(FPS)
 
@@ -176,7 +239,6 @@ def start():
         startFrame.grid_forget()
         waitFrame.grid()
         isServerRunning()
-
             
 def isServerRunning():
     global mainTopLevel, socket
