@@ -8,8 +8,10 @@
         "window_title": "The Weakest Link"
     }, 
     "questions": {
-        "finalQ": "questions.csv", 
-        "mainQ": "questions.csv", 
+        "finalRndQCnt": 10,
+        "sortQuestions": false, 
+        "mainQ": "resources/questions.csv", 
+        "finalQ": "resources/questions.csv"
     }, 
     "server": {
         "bindAddress": "localhost", 

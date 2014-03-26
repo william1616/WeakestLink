@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter import ttk
 from collections import OrderedDict
+from operator import itemgetter
+from math import floor
 import csv, threading, time, sys, os.path
 
 path = os.path.dirname(__file__)
@@ -12,23 +14,27 @@ except ImportError:
     network = loader.load_module("network")
     loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
     misc = loader.load_module("misc")
-
-variables = {
-    'cntQuestions': 0, #row counter for csv file
-    'correct': 0, #correct counter per round
-    'cntRounds': 1,
-    'cntRquestions': 1, #question counter per round
-    'bank': 0,
-    'question': '',
-#    'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
-    'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0}), #list of contestants creating OrderedDict randomises the order
-    'money': [0, 50,100,200,300,400,500,1000,2500,5000],
-    'crtContestant': -1, #current contestant key index
-    'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final, 5 = head2head
-    'time': False, #time up
-    }
+    
 status = []
 socketList = []
+
+def varDeclaration():
+    global variables
+    variables = {
+        'cntQuestions': 0, #row counter for csv file
+        'correct': 0, #correct counter per round
+        'cntRounds': 1,
+        'cntRquestions': 1, #question counter per round
+        'bank': 0,
+        'question': '',
+    #    'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
+        'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0}), #list of contestants creating OrderedDict randomises the order
+        'money': [0, 50,100,200,300,400,500,1000,2500,5000],
+        'crtContestant': -1, #current contestant key index
+        'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final, 5 = head2head
+        'time': False, #time up
+        'finalScores': [[None] * int(config['questions']['finalRndQCnt'] / 2), [None] * int(config['questions']['finalRndQCnt'] / 2)] #final scores
+        }
 
 def statusUpdate(info):
     global displayStatus, status
@@ -104,7 +110,8 @@ class questionControl(threading.Thread):
                 break
         
         variables['cntQuestions'] = 0
-        variables['cntRquestions'] = 1
+        variables['cntRquestions'] = variables['crtContestant'] = 1
+        #crtContestant = 1 saves some work on gui end - check this if no of contestants becomes variable
         for i in list(variables['contestants'].keys()): #set each contestatnts score to 0
             variables['contestants'][i] = 0
         statusUpdate('Final Round starting')
@@ -306,11 +313,15 @@ def finalQuestionHandler(event, question, awnser):
     if event == 1:
         statusUpdate('Correct')
         variables['contestants'][list(variables['contestants'].keys())[variables['crtContestant']]] += 1
+        if variables['cntRquestions'] <= config['questions']['finalRndQCnt']:
+            variables['finalScores'][variables['crtContestant']][floor(variables['cntQuestions'] / 2)] = True
     elif event == 2:
         statusUpdate('Incorrect - ' + awnser)
         #if head2head remove the first incorect awnsering contestant
         if variables['cntRquestions'] > config['questions']['finalRndQCnt']:
             variables['contestants'].pop(list(variables['contestants'].keys())[variables['crtContestant']])
+        else:
+            variables['finalScores'][variables['crtContestant']][floor(variables['cntQuestions'] / 2)] = False
     
     if variables['cntRquestions'] == config['questions']['finalRndQCnt']:
         i = topScore = 0
@@ -371,6 +382,7 @@ def setup():
     print('Importing Config...')
     config = misc.initConfig()
     print('Config Imported')
+    varDeclaration()
         
 if __name__ == '__main__':
     setup()
