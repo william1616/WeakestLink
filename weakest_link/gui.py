@@ -67,7 +67,7 @@ class awnserPlaceholder():
         if state == False: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\incorrectRed.png'))
         elif state == True: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\correctBlue.png'))
         else: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\neutralBlue.png'))
-        #awnserImage = pygame.transform.scale(awnserImage, (int(self.surface.get_width() / 10), int(self.surface.get_height() / (40 / 3))))
+        awnserImage = pygame.transform.scale(awnserImage, (int(self.surface.get_width() / 10), int(self.surface.get_height() / (40 / 3))))
         self.surface.blit(awnserImage, self.coordinates)
     def correct(self):
         self.change(True)
