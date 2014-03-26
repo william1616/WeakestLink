@@ -30,7 +30,7 @@ def initPygame():
     blue = pygame.Color(0, 100, 255)
     black = pygame.Color(0, 0, 0)
 
-class placeholder():
+class moneyPlaceholder():
     def __init__(self, surface, coordinates, text, font=None, textColour=None, active=False):
         self.surface = surface
         self.coordinates = coordinates
@@ -39,14 +39,14 @@ class placeholder():
     def change(self, text=None, font=None, textColour=None):
         if not textColour: textColour = pygame.Color(0, 0, 0)
         if not font: font = pygame.font.SysFont(config['pygame']['font'], int(self.surface.get_height() / 25))
-        if self.active: placeholder = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\redPlaceholder.png'))
-        else: placeholder = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\bluePlaceholder.png'))
-        placeholder = pygame.transform.scale(placeholder, (int(self.surface.get_width() / (160 / 27)), int(self.surface.get_height() / (40 / 3))))
-        self.surface.blit(placeholder, self.coordinates)
+        if self.active: moneyImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\redPlaceholder.png'))
+        else: moneyImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\bluePlaceholder.png'))
+        moneyImage = pygame.transform.scale(moneyImage, (int(self.surface.get_width() / (160 / 27)), int(self.surface.get_height() / (40 / 3))))
+        self.surface.blit(moneyImage, self.coordinates)
         if text:
             self.text = font.render(text, True, textColour)
             self.textRect = self.text.get_rect()
-            self.textRect.center = tuple(map(operator.add, placeholder.get_rect().center, self.coordinates))
+            self.textRect.center = tuple(map(operator.add, moneyImage.get_rect().center, self.coordinates))
         self.surface.blit(self.text, self.textRect)
     def activate(self):
         self.active = True
@@ -54,6 +54,25 @@ class placeholder():
     def deactivate(self):
         self.active = False
         self.change()
+        
+class awnserPlaceholder():
+    def __init__(self, surface, coordinates, font=None, textColour=None):
+        self.surface = surface
+        self.coordinates = coordinates
+        self.change(None, font, textColour)
+    def change(self, state=None, font=None, textColour=None):
+        #state none=blue no symbol true=blue and tick false=red and cross
+        if not textColour: textColour = pygame.Color(0, 0, 0)
+        if not font: font = pygame.font.SysFont(config['pygame']['font'], int(self.surface.get_height() / 25))
+        if state == False: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\incorrectRed.png'))
+        elif state == True: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\correctBlue.png'))
+        else: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\neutralBlue.png'))
+        awnserImage = pygame.transform.scale(awnserImage, (int(self.surface.get_width() / 10), int(self.surface.get_height() / (40 / 3))))
+        self.surface.blit(awnserImage, self.coordinates)
+    def correct(self):
+        self.change(True)
+    def incorrect(self):
+        self.change(False)
 
 def wrapText(surface, coordinates, text, font, textColour):
     rect = pygame.Rect(coordinates)
@@ -77,8 +96,6 @@ def wrapText(surface, coordinates, text, font, textColour):
         surface.blit(textSurface, (rect.left, y))
         y += fontHeight + lineSpacing
         text = text[i:]
-
-    return text
     
 def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
     displaySurface.fill(blue)
@@ -88,17 +105,17 @@ def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
 
     money.remove(0)
     money.reverse()
-    moneyPlaceholder = {}
+    moneyPlaceholderList = {}
 
     for value in money:
-            moneyPlaceholder[value] = placeholder(displaySurface, ((int(displaySurface.get_width() / 80)), int((displaySurface.get_height()  / 60) + (displaySurface.get_height()  / (120 / 11)) * money.index(value))), '£' + str(value), textColour = white)
+        moneyPlaceholderList[value] = moneyPlaceholder(displaySurface, ((int(displaySurface.get_width() / 80)), int((displaySurface.get_height()  / 60) + (displaySurface.get_height()  / (120 / 11)) * money.index(value))), '£' + str(value), textColour = white)
     
     money.reverse()
 
     for i in range(0, correctIndex):
-        moneyPlaceholder[money[i]].activate()
+        moneyPlaceholderList[money[i]].activate()
             
-    bank = placeholder(displaySurface, (int(displaySurface.get_width() / 80), int(displaySurface.get_height()  - (displaySurface.get_height()  / (120 / 13)))), "Bank £" + str(bank), textColour = white, active = True)
+    bank = moneyPlaceholder(displaySurface, (int(displaySurface.get_width() / 80), int(displaySurface.get_height()  - (displaySurface.get_height()  / (120 / 13)))), "Bank £" + str(bank), textColour = white, active = True)
 
     titleText = titleFont.render('Round ' + str(round) + ' Question ' + str(roundQuestion), True, black)
     titleRect = titleText.get_rect()
@@ -107,11 +124,77 @@ def drawQuestion(round, roundQuestion, question, correctIndex, money, bank):
 
     wrapText(displaySurface, (int(displaySurface.get_width() / (120 / 31)), int(titleRect.bottom + (displaySurface.get_height()  / 80)), int(displaySurface.get_width() - (displaySurface.get_width() / (40 /11))), int(displaySurface.get_height()  - (titleRect.height + (displaySurface.get_height()  / 80)))), question, mainFont, black)
 
+def drawFinalQuestion(questionCnt, question, contestants, scores):
+    #lastResult true=correct false=incorrect
+    displaySurface.fill(blue)
+    mainFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / 15))
+    titleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / (120 / 11)))
+    titleFont.set_underline(True)
+    
+    titleText = titleFont.render('Final Round Question ' + str(questionCnt), True, black)
+    titleRect = titleText.get_rect()
+    titleRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height()  / 80))
+    displaySurface.blit(titleText, titleRect)
+    
+    wrapText(displaySurface, (int(displaySurface.get_width() / 80), int(titleRect.bottom + (displaySurface.get_height()  / 80)), int(displaySurface.get_width() - (displaySurface.get_width() / 80)), int(displaySurface.get_height()  - (titleRect.height + (displaySurface.get_height()) * 3 / 7))), question, mainFont, black)
+    
+    mainText = mainFont.render(contestants[0] + ':', True, black)
+    mainRect = mainText.get_rect()
+    mainRect.topright = (int(displaySurface.get_width() * 2 / 9), int((displaySurface.get_height() - titleRect.height) * 5 / 7))
+    displaySurface.blit(mainText, mainRect)
+    
+    mainText = mainFont.render(contestants[1] + ':', True, black)
+    mainRect = mainText.get_rect()
+    mainRect.topright = (int(displaySurface.get_width() * 2 / 9), int((displaySurface.get_height() - titleRect.height) * 6 / 7))
+    displaySurface.blit(mainText, mainRect)
+    
+    awnserPlaceholder1 = {}
+    awnserPlaceholder2 = {}
+    
+    for i in range(2, 7):
+        awnserPlaceholder1[i] = awnserPlaceholder(displaySurface, (int(displaySurface.get_width() * ((i) / 7)), int((displaySurface.get_height() - titleRect.height) * 5 / 7)))
+        if scores[0][i - 2] == True:
+            awnserPlaceholder1[i].correct()
+        elif scores[0][i - 2] == False:
+            awnserPlaceholder1[i].incorrect()
+        awnserPlaceholder2[i] = awnserPlaceholder(displaySurface, (int(displaySurface.get_width() * ((i) / 7)), int((displaySurface.get_height() - titleRect.height) * 6 / 7)))
+        if scores[1][i - 2] == True:
+            awnserPlaceholder2[i].correct()
+        elif scores[1][i - 2] == False:
+            awnserPlaceholder2[i].incorrect()
+            
+def drawHead2Head(questionCnt, contestants, scores):
+    displaySurface.fill(blue)
+    mainFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / 15))
+    titleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / (160 / 11)))
+    titleFont.set_underline(True)
+    subTitleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height() / (160 / 11)))
+    
+    titleText = titleFont.render('Head To Head Round', True, black)
+    titleRect = titleText.get_rect()
+    titleRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height()  / 80))
+    displaySurface.blit(titleText, titleRect)
+    
+    subText = subTitleFont.render('Question ' + str(questionCnt), True, black)
+    subTextRect = subText.get_rect()
+    subTextRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / (80 / 7)))
+    displaySurface.blit(subText, subTextRect)
+    
+    mainText = mainFont.render(contestants[0] + ' : ' + str(scores[0]), True, black)
+    mainRect = mainText.get_rect()
+    mainRect.midtop = (int(displaySurface.get_width() / 2), int((displaySurface.get_height() - titleRect.height) * 4 / 7))
+    displaySurface.blit(mainText, mainRect)
+    
+    mainText = mainFont.render(contestants[1] + ' : ' + str(scores[1]), True, black)
+    mainRect = mainText.get_rect()
+    mainRect.midtop = (int(displaySurface.get_width() / 2), int((displaySurface.get_height() - titleRect.height) * 5 / 7))
+    displaySurface.blit(mainText, mainRect)
+    
 def drawTime(round, contestants):
-    drawEnd(round, contestants, 'Time Up')
+    drawEnd(round - 1, contestants, 'Time Up')
 
 def drawCorrect(round, contestants):
-    drawEnd(round, contestants, 'You got all the Questions Correct')
+    drawEnd(round - 1, contestants, 'You got all the Questions Correct')
 
 def drawEnd(round, contestants, line1):
     displaySurface.fill(blue)
@@ -149,9 +232,42 @@ def drawEnd(round, contestants, line1):
             y += int(displaySurface.get_height() / 16)
         displaySurface.blit(contestant, contestantRect)
     
+def drawRoundStart(round):
+    drawStart("Round " + str(round) + " Starting")
+    
+def drawFinalStart(contestants):
+    drawStart("Final Round Starting", contestants[0] + " vs " + contestants[1])
+    
+def drawHead2HeadStart():
+    drawStart("Going to Head to Head Round")
+    
+def drawStart(text1, text2=None):
+    displaySurface.fill(blue)
+    subTitleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height() / (160 / 11)))
+    
+    text1 = subTitleFont.render(text1, True, black)
+    textRect1 = text1.get_rect()
+    textRect1.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() * 1 / 3))
+    displaySurface.blit(text1, textRect1)
+    
+    if text2:
+        text2 = subTitleFont.render(text2, True, black)
+        textRect2 = text2.get_rect()
+        textRect2.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() * 2 / 3))
+        displaySurface.blit(text2, textRect2)
+        
+def displayWinner(winner):
+    displaySurface.fill(blue)
+    subTitleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height() / (160 / 11)))
+    
+    text = subTitleFont.render(winner + ' is the Winner', True, black)
+    textRect = text.get_rect()
+    textRect.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / 2))
+    displaySurface.blit(text, textRect)
+
 def gameLoop():
     global socket
-    end = False
+    end = head2head = False
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or event.type == KEYDOWN and event.dict['key'] == 27:
@@ -161,12 +277,27 @@ def gameLoop():
         if end: break
         variables = network.getMessageofType('variables', [socket], False)
         if variables:
-            if variables['correct'] == len(variables['money']) - 1:
+            if variables['gamemode'] == 0:
+                if len(variables['contestants']) == 2:
+                    drawFinalStart(list(variables['contestants'].keys()))
+                elif len(variables['contestants']) == 1:
+                    displayWinner(list(variables['contestants'])[0])
+                else:
+                    drawRoundStart(variables['cntRounds'])
+            elif variables['gamemode'] == 2 and variables['correct'] == len(variables['money']) - 1:
                 drawCorrect(variables['cntRounds'], variables['contestants'])
-            elif variables['time']:
+            elif variables['gamemode'] == 2 and variables['time']:
                 drawTime(variables['cntRounds'], variables['contestants'])
-            else:
+            elif variables['gamemode'] == 1:
                 drawQuestion(variables['cntRounds'], variables['cntRquestions'], variables['question'], variables['correct'], variables['money'], variables['bank'])
+            elif variables['gamemode'] == 4 and len(variables['contestants']) > 1:
+                if head2head:
+                    drawHead2Head(variables['cntRquestions'] - config['questions']['finalRndQCnt'], list(variables['contestants'].keys()), list(variables['contestants'].values()))
+                else:
+                    drawFinalQuestion(variables['cntRquestions'], variables['question'], list(variables['contestants'].keys()), variables['finalScores'])
+            elif variables['gamemode'] == 5:
+                drawHead2HeadStart()
+                head2head = True
         pygame.display.update()
         fpsClock.tick(FPS)
 
@@ -176,7 +307,6 @@ def start():
         startFrame.grid_forget()
         waitFrame.grid()
         isServerRunning()
-
             
 def isServerRunning():
     global mainTopLevel, socket

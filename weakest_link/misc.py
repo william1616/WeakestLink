@@ -17,7 +17,7 @@ class threadFunc(threading.Thread):
 
 def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json')):
     #options list here needs to be kept up to date with config fields
-    options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "questions.csv", "finalQ": "questions.csv"}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": False}, "pygame": {"font": "microsoftsansserif", "window_title": "The Weakest Link", "fps": 10, "width": 800, "height": 600}}
+    options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "resources/questions.csv", "finalQ": "resources/questions.csv", "finalRndQCnt": 10, "sortQuestions": False}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": False}, "pygame": {"font": "microsoftsansserif", "window_title": "The Weakest Link", "fps": 10, "width": 800, "height": 600}}
     
     with open(fileName, 'r') as configFile:
         try:
@@ -29,14 +29,13 @@ def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json
                 value = options.get(key)
                 if key in config:
                     for subkey in value:
-                        subvalue = value.get(subkey)
                         if not subkey in config[key]:
-                            print('Cannot find key [' + key + '][' + subkey + ' in ConfigFile')
+                            print('Cannot find key [' + key + '][' + subkey + '] in ConfigFile')
                             raise
                 else:
                     print('Cannot find key [' + key + '] in ConfigFile')
                     raise
-                return config
+            return config
         except:
             print('Overwritting config file')
             writeConfig(options, fileName)
