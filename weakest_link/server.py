@@ -27,8 +27,7 @@ def varDeclaration():
         'cntRquestions': 1, #question counter per round
         'bank': 0,
         'question': '',
-    #    'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
-        'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0}), #list of contestants creating OrderedDict randomises the order
+        'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
         'money': [0, 50,100,200,300,400,500,1000,2500,5000],
         'crtContestant': -1, #current contestant key index
         'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final, 5 = head2head
@@ -128,6 +127,8 @@ class questionControl(threading.Thread):
                     break
             if len(variables['contestants']) == 1:
                 statusUpdate(str(list(variables['contestants'])[0]) + ' is the winner!')
+                variables['gamemode'] = 0
+                updateClient()
                 break
                 
 
@@ -251,8 +252,12 @@ def questionHandler(event, question, awnser):
     if variables['correct'] == len(variables['money']) - 1:
         statusUpdate('You have got all questions in round ' + str(variables['cntRounds']) + ' correct')
         statusUpdate('You have £' + str(variables['bank']) + ' in the bank')
+        updateClient()
+        time.sleep(1)
+        variables['gamemode'] = 2
         variables['cntRounds'] += 1
         variables['cntRquestions'] = 1
+        updateClient()
         variables['correct'] = 0
     statusUpdate('You now have £' + str(variables['money'][variables['correct']]))
     if variables['cntRquestions'] == 1:
@@ -272,9 +277,9 @@ def questionHandler(event, question, awnser):
                 variables['gamemode'] = 3
                 updateClient()
                 break
+    updateClient()
     if len(variables['contestants']) > 2:
         variables['gamemode'] = 1
-    updateClient()
     return True
     
 def askFinalQuestion():

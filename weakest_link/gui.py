@@ -162,12 +162,39 @@ def drawFinalQuestion(questionCnt, question, contestants, scores):
             awnserPlaceholder2[i].correct()
         elif scores[1][i - 2] == False:
             awnserPlaceholder2[i].incorrect()
+            
+def drawHead2Head(questionCnt, contestants, scores):
+    displaySurface.fill(blue)
+    mainFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / 15))
+    titleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / (160 / 11)))
+    titleFont.set_underline(True)
+    subTitleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height() / (160 / 11)))
+    
+    titleText = titleFont.render('Head To Head Round', True, black)
+    titleRect = titleText.get_rect()
+    titleRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height()  / 80))
+    displaySurface.blit(titleText, titleRect)
+    
+    subText = subTitleFont.render('Question ' + str(questionCnt), True, black)
+    subTextRect = subText.get_rect()
+    subTextRect.midtop = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / (80 / 7)))
+    displaySurface.blit(subText, subTextRect)
+    
+    mainText = mainFont.render(contestants[0] + ' : ' + str(scores[0]), True, black)
+    mainRect = mainText.get_rect()
+    mainRect.midtop = (int(displaySurface.get_width() / 2), int((displaySurface.get_height() - titleRect.height) * 4 / 7))
+    displaySurface.blit(mainText, mainRect)
+    
+    mainText = mainFont.render(contestants[1] + ' : ' + str(scores[1]), True, black)
+    mainRect = mainText.get_rect()
+    mainRect.midtop = (int(displaySurface.get_width() / 2), int((displaySurface.get_height() - titleRect.height) * 5 / 7))
+    displaySurface.blit(mainText, mainRect)
     
 def drawTime(round, contestants):
-    drawEnd(round, contestants, 'Time Up')
+    drawEnd(round - 1, contestants, 'Time Up')
 
 def drawCorrect(round, contestants):
-    drawEnd(round, contestants, 'You got all the Questions Correct')
+    drawEnd(round - 1, contestants, 'You got all the Questions Correct')
 
 def drawEnd(round, contestants, line1):
     displaySurface.fill(blue)
@@ -206,7 +233,7 @@ def drawEnd(round, contestants, line1):
         displaySurface.blit(contestant, contestantRect)
     
 def drawRoundStart(round):
-    drawStart("Round " + round + " Starting")
+    drawStart("Round " + str(round) + " Starting")
     
 def drawFinalStart(contestants):
     drawStart("Final Round Starting", contestants[0] + " vs " + contestants[1])
@@ -228,10 +255,19 @@ def drawStart(text1, text2=None):
         textRect2 = text2.get_rect()
         textRect2.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() * 2 / 3))
         displaySurface.blit(text2, textRect2)
+        
+def displayWinner(winner):
+    displaySurface.fill(blue)
+    subTitleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height() / (160 / 11)))
+    
+    text = subTitleFont.render(winner + ' is the Winner', True, black)
+    textRect = text.get_rect()
+    textRect.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / 2))
+    displaySurface.blit(text, textRect)
 
 def gameLoop():
     global socket
-    end = False
+    end = head2head = False
     while True:
         for event in pygame.event.get():
             if event.type == QUIT or event.type == KEYDOWN and event.dict['key'] == 27:
@@ -244,6 +280,8 @@ def gameLoop():
             if variables['gamemode'] == 0:
                 if len(variables['contestants']) == 2:
                     drawFinalStart(list(variables['contestants'].keys()))
+                elif len(variables['contestants']) == 1:
+                    displayWinner(list(variables['contestants'])[0])
                 else:
                     drawRoundStart(variables['cntRounds'])
             elif variables['gamemode'] == 2 and variables['correct'] == len(variables['money']) - 1:
@@ -252,11 +290,14 @@ def gameLoop():
                 drawTime(variables['cntRounds'], variables['contestants'])
             elif variables['gamemode'] == 1:
                 drawQuestion(variables['cntRounds'], variables['cntRquestions'], variables['question'], variables['correct'], variables['money'], variables['bank'])
-            elif variables['gamemode'] == 4:
-                drawFinalQuestion(variables['cntRquestions'], variables['question'], list(variables['contestants'].keys()), variables['finalScores'])
+            elif variables['gamemode'] == 4 and len(variables['contestants']) > 1:
+                if head2head:
+                    drawHead2Head(variables['cntRquestions'] - config['questions']['finalRndQCnt'], list(variables['contestants'].keys()), list(variables['contestants'].values()))
+                else:
+                    drawFinalQuestion(variables['cntRquestions'], variables['question'], list(variables['contestants'].keys()), variables['finalScores'])
             elif variables['gamemode'] == 5:
-                ##head to head round
-                pass
+                drawHead2HeadStart()
+                head2head = True
         pygame.display.update()
         fpsClock.tick(FPS)
 
