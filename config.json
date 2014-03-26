@@ -7,7 +7,7 @@
         "window_title": "The Weakest Link"
     }, 
     "questions": {
-        "finalRndQCnt": 6, 
+        "finalRndQCnt": 10, 
         "sortQuestions": false, 
         "mainQ": "resources/questions.csv", 
         "finalQ": "resources/questions.csv"

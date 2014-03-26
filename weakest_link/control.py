@@ -48,17 +48,17 @@ def sendCommand(cmd):
     network.sendMessage('cmd', cmd, socket)
     
 def enableButton():
-    global button
-    for key, value in button.items():
+    global mainButton
+    for key, value in mainButton.items():
         value.config(state='normal')
         
 def disableButton():
-    global button
-    for key, value in button.items():
+    global mainButton
+    for key, value in mainButton.items():
         value.config(state='disabled')
     
 def initTk(parent):
-    global address, question, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, button
+    global address, question, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainButton, finalTopLevel, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
 
     mainTopLevel = parent
     parent.title(config['Tk']['window_title'])
@@ -99,16 +99,40 @@ def initTk(parent):
     ttk.Label(mainFrame, textvariable=cur_money).grid(column=5, row=1, sticky=N)
     ttk.Label(mainFrame, textvariable=bank).grid(column=5, row=2, sticky=N)
     
-    button = {}
+    mainButton = {}
     
-    button['correct'] = ttk.Button(mainFrame, text="Correct", command=lambda: sendCommand(1))
-    button['correct'].grid(column=2, row=1, sticky=N)
-    button['incorrect'] = ttk.Button(mainFrame, text="Incorrect", command=lambda: sendCommand(2))
-    button['incorrect'].grid(column=2, row=2, sticky=N)
-    button['bank'] = ttk.Button(mainFrame, text="Bank", command=lambda: sendCommand(3))
-    button['bank'].grid(column=3, row=2, sticky=N)
-    button['time'] = ttk.Button(mainFrame, text="Time Up", command=lambda: sendCommand(4))
-    button['time'].grid(column=3, row=1, sticky=N)
+    mainButton['correct'] = ttk.Button(mainFrame, text="Correct", command=lambda: sendCommand(1))
+    mainButton['correct'].grid(column=2, row=1, sticky=N)
+    mainButton['incorrect'] = ttk.Button(mainFrame, text="Incorrect", command=lambda: sendCommand(2))
+    mainButton['incorrect'].grid(column=2, row=2, sticky=N)
+    mainButton['bank'] = ttk.Button(mainFrame, text="Bank", command=lambda: sendCommand(3))
+    mainButton['bank'].grid(column=3, row=2, sticky=N)
+    mainButton['time'] = ttk.Button(mainFrame, text="Time Up", command=lambda: sendCommand(4))
+    mainButton['time'].grid(column=3, row=1, sticky=N)
+    
+    finalTopLevel = Toplevel(parent)
+    finalTopLevel.title(config['Tk']['window_title'])
+    finalTopLevel.resizable(False, False)
+    finalTopLevel.withdraw()
+
+    finalQuestion = StringVar()
+    finalStatus = StringVar()
+    finalName1 = StringVar()
+    finalName2 = StringVar()
+    finalScore1 = IntVar()
+    finalScore2 = IntVar()
+
+    ttk.Label(finalTopLevel, textvariable=finalStatus, width=100, background='red').grid(column=1, row=1, sticky=N)
+    ttk.Label(finalTopLevel, textvariable=finalQuestion, width=100).grid(column=1, row=2, sticky=N)
+    ttk.Label(finalTopLevel, textvariable=finalName1).grid(column=5, row=1, sticky=N)
+    ttk.Label(finalTopLevel, textvariable=finalName2).grid(column=5, row=2, sticky=N)
+    ttk.Label(finalTopLevel, textvariable=finalScore1).grid(column=6, row=1, sticky=N)
+    ttk.Label(finalTopLevel, textvariable=finalScore2).grid(column=6, row=2, sticky=N)
+    
+    mainButton['finalCorrect'] = ttk.Button(finalTopLevel, text="Correct", command=lambda: sendCommand(1))
+    mainButton['finalCorrect'].grid(column=2, row=1, sticky=N)
+    mainButton['finalIncorrect'] = ttk.Button(finalTopLevel, text="Incorrect", command=lambda: sendCommand(2))
+    mainButton['finalIncorrect'].grid(column=2, row=2, sticky=N)
     
     voteTopLevel = Toplevel(parent)
     voteTopLevel.title(config['Tk']['window_title'])
@@ -123,6 +147,11 @@ def initTk(parent):
     voteVar = []
     voteButton = []
     
+    for i in range(0, 8):
+        voteVar.append(StringVar())
+        voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
+        voteButton[i].grid(column=i % 4, row=math.ceil((1 + i) / 4), sticky=N)
+        
     waitFrame = ttk.Frame(startTopLevel, padding="3 3 3 3")
     waitFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     waitFrame.columnconfigure(0, weight=1)
@@ -133,11 +162,6 @@ def initTk(parent):
     
     waitFrame.grid_remove()
     
-    for i in range(0, 8):
-        voteVar.append(StringVar())
-        voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
-        voteButton[i].grid(column=i % 4, row=math.ceil((1 + i) / 4), sticky=N)
-        
     mainTopLevel.protocol("WM_DELETE_WINDOW", close)
     startTopLevel.protocol("WM_DELETE_WINDOW", close)
     voteTopLevel.protocol("WM_DELETE_WINDOW", close)
@@ -146,6 +170,7 @@ def close():
     global mainTopLevel, startTopLevel, voteTopLevel
     startTopLevel.destroy()
     voteTopLevel.destroy()
+    finalTopLevel.destroy()
     if mainTopLevel.config()['class'][4] == 'Toplevel': 
         mainTopLevel.root.deiconify()
     mainTopLevel.destroy()
@@ -157,10 +182,18 @@ def variableUpdates():
     #only do any processing if variables have been updated
     if variables:
         disableButton()
-        if variables['gamemode'] == 0:
+        if len(variables['contestants']) == 1:
+            finalStatus.set(str(list(variables['contestants'])[0]) + ' is the winner!')
+            finalQuestion.set('')
+        elif variables['gamemode'] == 0:
             voteTopLevel.withdraw()
-            status.set('Round ' + str(variables['cntRounds']) + ' starting')
-            mainTopLevel.deiconify()
+            if len(variables['contestants']) == 2:
+                mainTopLevel.withdraw()
+                finalStatus.set('Final Round starting')
+                finalTopLevel.deiconify()
+            else:
+                status.set('Round ' + str(variables['cntRounds']) + ' starting')
+                mainTopLevel.deiconify()
         elif variables['gamemode'] == 1:
             voteTopLevel.withdraw()
             status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
@@ -178,6 +211,20 @@ def variableUpdates():
                 except IndexError:
                     voteButton[i].grid_forget()
             voteTopLevel.deiconify()
+        elif variables['gamemode'] == 4:
+            voteTopLevel.withdraw()
+            finalStatus.set('Final Question ' + str(variables['cntRquestions']))
+            finalQuestion.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
+            if finalName1.get() == '':
+                finalName1.set(list(variables['contestants'].keys())[0])
+                finalName2.set(list(variables['contestants'].keys())[1])
+            finalScore1.set(list(variables['contestants'].values())[0])
+            finalScore2.set(list(variables['contestants'].values())[1])
+            finalTopLevel.deiconify()
+            enableButton()
+        elif variables['gamemode'] == 5:
+            finalStatus.set('Going to Head to Head Round')
+            finalQuestion.set('')
     
     try:
         #run this function again in 100ms
