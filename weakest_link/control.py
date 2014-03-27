@@ -13,6 +13,7 @@ except ImportError:
     misc = loader.load_module("misc")
 
 socket = network.initClientSocket()
+running = False
 
 def start():
     global address, socket, startFrame, waitFrame
@@ -24,13 +25,14 @@ def start():
         messagebox.showerror("Error", "Could not find server \"" + address.get() + "\"")
 
 def isServerRunning():
-    global socket, startTopLevel, mainTopLevel
+    global socket, startTopLevel, mainTopLevel, running
     
     variables = network.getMessageofType('variables', [socket], False)
     if variables and variables['gamemode'] != -1: #if no longer listning for conections
         variableUpdates()
         startTopLevel.withdraw()
         mainTopLevel.deiconify()
+        running = True
     else:
         if mainTopLevel.config()['class'][4] == 'Tk':
             mainTopLevel.after(100, isServerRunning)
@@ -81,8 +83,6 @@ def initTk(parent):
     
     startFile.add_command(label='Exit', command=close)
     
-    startTools.add_command(label='Go to Question', command=gotoQuestion)
-    startTools.add_separator()
     startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
     
     startHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
@@ -127,6 +127,21 @@ def initTk(parent):
     mainButton['bank'].grid(column=3, row=2, sticky=N)
     mainButton['time'] = ttk.Button(mainFrame, text="Time Up", command=lambda: sendCommand(4))
     mainButton['time'].grid(column=3, row=1, sticky=N)
+    
+    mainMenu = Menu(mainTopLevel)
+    mainTopLevel['menu'] = mainMenu
+    mainFile = Menu(mainMenu, tearoff=0)
+    mainTools = Menu(mainMenu, tearoff=0)
+    mainHelp = Menu(mainMenu, tearoff=0)
+    mainMenu.add_cascade(menu=mainFile, label='File')
+    mainMenu.add_cascade(menu=mainTools, label='Tools')
+    mainMenu.add_cascade(menu=mainHelp, label='Help')
+    
+    mainFile.add_command(label='Exit', command=close)
+    
+    mainTools.add_command(label='Goto Question...', command=gotoQuestion)
+    
+    mainHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
     
     finalTopLevel = Toplevel(parent)
     finalTopLevel.title(config['Tk']['window_title'])
@@ -185,9 +200,9 @@ def initTk(parent):
     voteTopLevel.protocol("WM_DELETE_WINDOW", close)
 
 def gotoQuestion():
-    global variables, socket
-    if 'variables' in globals() and variables['gamemode'] != -1:
-        questionNo = simpledialog.askinteger("Go to question...", "Question Number:", initialvalue=variables['cntQuestions'])
+    global socket, running
+    if running:
+        questionNo = simpledialog.askinteger("Go to question...", "Question Number:")
         if questionNo:
             disableButton()
             network.sendMessage('gotoQu', questionNo, socket)

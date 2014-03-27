@@ -113,8 +113,12 @@ class questionControl(threading.Thread):
                 if receivedCommand and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
                     break
                 questionNo = network.getMessageofType('gotoQu', socketList, False)
-                if questionNo and questionNo > 0 and questionNo <= len(questions):
-                    variables['cntQuestions'] = questionNo
+                if questionNo:
+                    if questionNo > 0 and questionNo <= len(questions):
+                        variables['cntQuestions'] = questionNo
+                    elif questionNo < 0 and abs(questionNo) <= len(questions) and variables['cntQuestions'] - questionNo <= len(questions):
+                        #questionNo -ve -> addition
+                        variables['cntQuestions'] -= questionNo
                     break
             if len(variables['contestants']) == 2 or self.end:
                 break
@@ -181,6 +185,7 @@ def initTk(parent):
     
     startTools.add_command(label='Select Main Question File', command=selectMainQuestionFile)
     startTools.add_command(label='Select Final Question File', command=selectFinalQuestionFile)
+    startTools.add_command(label='Goto Question...', command=gotoQuestion)
     startTools.add_command(label='Edit Contestant List', command=editContestants)
     startTools.add_separator()
     startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
@@ -216,6 +221,19 @@ def initTk(parent):
     parent.protocol("WM_DELETE_WINDOW", lambda: close(parent))
     
     print('GUI Initiated')
+    
+def gotoQuestion():
+    global questionThread
+    if variables['gamemode'] != -1:
+        questionNo = simpledialog.askinteger("Go to question...", "Question Number:")
+        if questionNo > 0 and questionNo <= len(questions):
+            variables['cntQuestions'] = questionNo
+        elif questionNo < 0 and abs(questionNo) <= len(questions) and variables['cntQuestions'] - questionNo <= len(questions):
+            #questionNo -ve -> addition
+            variables['cntQuestions'] -= questionNo
+        questionThread.newQuestion = True
+    else:
+        messagebox.showerror("Error", "Server has not Started Running Yet!")
     
 def editContestants():
     global variables, contestantTopLevel, contestantNameEntry, contestantNameValues
