@@ -215,6 +215,9 @@ def initTk(parent):
     contestantTopLevel.resizable(False, False)
     contestantTopLevel.withdraw()
     
+    contestantTopLevel.bind("<Return>", lambda event: updateContestants())
+    contestantTopLevel.bind("<Escape>", lambda event: contestantTopLevel.withdraw())
+    
     ttk.Button(contestantTopLevel, text='Update', command=updateContestants).grid(column=0, row=8, sticky=N)
     ttk.Button(contestantTopLevel, text='Cancel', command=contestantTopLevel.withdraw).grid(column=1, row=8, sticky=N)
     

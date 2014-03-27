@@ -59,7 +59,7 @@ def disableButton():
     global mainButton
     for key, value in mainButton.items():
         value.config(state='disabled')
-    
+        
 def initTk(parent):
     global address, question, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainButton, finalTopLevel, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
 
@@ -198,7 +198,7 @@ def initTk(parent):
     mainTopLevel.protocol("WM_DELETE_WINDOW", close)
     startTopLevel.protocol("WM_DELETE_WINDOW", close)
     voteTopLevel.protocol("WM_DELETE_WINDOW", close)
-
+   
 def gotoQuestion():
     global socket, running
     if running:
