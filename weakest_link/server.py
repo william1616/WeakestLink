@@ -98,38 +98,40 @@ class questionControl(threading.Thread):
         self.end = False
     def run(self):
         global socketList
-        while not self.end:
+        while True:
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
             while not self.newQuestion:
                 receivedCommand = network.getMessageofType('cmd', socketList, False)
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
                     break
-            if len(variables['contestants']) == 2:
+            if len(variables['contestants']) == 2 or self.end:
                 break
-        
-        variables['cntQuestions'] = 0
-        variables['cntRquestions'] = variables['crtContestant'] = 1
-        #crtContestant = 1 saves some work on gui end - check this if no of contestants becomes variable
-        for i in list(variables['contestants'].keys()): #set each contestatnts score to 0
-            variables['contestants'][i] = 0
-        statusUpdate('Final Round starting')
-        variables['gamemode'] = 0
-        updateClient()
-        time.sleep(1)
-        
-        while True:
-            self.question, self.awnser = askFinalQuestion()
+                
+        if not self.end:
+            variables['cntQuestions'] = 0
+            variables['cntRquestions'] = variables['crtContestant'] = 1
+            #crtContestant = 1 saves some work on gui end - check this if no of contestants becomes variable
+            for i in list(variables['contestants'].keys()): #set each contestatnts score to 0
+                variables['contestants'][i] = 0
+            statusUpdate('Final Round starting')
+            variables['gamemode'] = 0
+            updateClient()
+            time.sleep(1)
+            
             while True:
-                receivedCommand = network.getMessageofType('cmd', socketList)
-                if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
-                    finalQuestionHandler(receivedCommand, self.question, self.awnser)
+                self.question, self.awnser = askFinalQuestion()
+                while True:
+                    receivedCommand = network.getMessageofType('cmd', socketList)
+                    if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
+                        finalQuestionHandler(receivedCommand, self.question, self.awnser)
+                        break
+                if len(variables['contestants']) == 1:
+                    statusUpdate(str(list(variables['contestants'])[0]) + ' is the winner!')
+                    variables['gamemode'] = 0
+                    updateClient()
+                    self.end = True
                     break
-            if len(variables['contestants']) == 1:
-                statusUpdate(str(list(variables['contestants'])[0]) + ' is the winner!')
-                variables['gamemode'] = 0
-                updateClient()
-                break
                 
 
 def start():
