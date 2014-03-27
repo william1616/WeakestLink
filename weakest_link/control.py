@@ -84,6 +84,7 @@ def initTk(parent):
     startFile.add_command(label='Exit', command=close)
     
     startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
+    startTools.add_command(label='Send Message to Prompt', command=promptMessage)
     
     startHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
     
@@ -140,6 +141,7 @@ def initTk(parent):
     mainFile.add_command(label='Exit', command=close)
     
     mainTools.add_command(label='Goto Question...', command=gotoQuestion)
+    mainTools.add_command(label='Send Message to Prompt', command=promptMessage)
     
     mainHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
     
@@ -199,6 +201,11 @@ def initTk(parent):
     startTopLevel.protocol("WM_DELETE_WINDOW", close)
     voteTopLevel.protocol("WM_DELETE_WINDOW", close)
    
+def promptMessage():
+    global socket
+    message = simpledialog.askstring("Send Message to Prompt", "Message:")
+    network.sendMessage('pmsg', message, socket)
+    
 def gotoQuestion():
     global socket, running
     if running:

@@ -27,9 +27,13 @@ def varDeclaration():
         'cntRquestions': 1, #question counter per round
         'bank': 0,
         'question': '',
+        'awnser': '',
+        'nxtQuestion': '',
+        'nxtAwnser': '',
         'contestants': OrderedDict(),
         'money': [0, 50,100,200,300,400,500,1000,2500,5000],
         'crtContestant': -1, #current contestant key index
+        'nxtContestant': -1, #next contestant key index
         'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final, 5 = head2head
         'time': False, #time up
         'finalScores': [[None] * int(config['questions']['finalRndQCnt'] / 2), [None] * int(config['questions']['finalRndQCnt'] / 2)], #final scores
@@ -120,6 +124,11 @@ class questionControl(threading.Thread):
                         #questionNo -ve -> addition
                         variables['cntQuestions'] -= questionNo
                     break
+                #server acts as a relay
+                promptMessage = network.getMessageofType('pmsg', socketList, False)
+                if promptMessage:
+                    for socketObj in socketList:
+                        network.sendMessage('pmsg', promptMessage, socketObj)
             if len(variables['contestants']) == 2 or self.end:
                 break
                 
@@ -312,8 +321,14 @@ def askQuestion():
     else:
         variables['crtContestant'] = 0
     
+    variables['nxtContestant'] = variables['crtContestant']
+    if variables['nxtContestant'] < len(variables['contestants']) - 1:
+        variables['nxtContestant'] += 1
+    else:
+        variables['nxtContestant'] = 0
+    
     #if there are still questions left ask the question
-    if variables['cntQuestions'] < len(questions):
+    if variables['cntQuestions'] < len(questions) - 1:
         if variables['cntRquestions'] == 1:
             for i in list(variables['contestants'].keys()): #set each contestatnts score to 0
                 variables['contestants'][i] = 0
@@ -324,6 +339,9 @@ def askQuestion():
         variables['gamemode'] = 1
         statusUpdate('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
         variables['question'] = questions[variables['cntQuestions']][0]
+        variables['awnser'] = questions[variables['cntQuestions']][1]
+        variables['nxtQuestion'] = questions[variables['cntQuestions'] + 1][0]
+        variables['nxtAwnser'] = questions[variables['cntQuestions'] + 1][1]
         statusUpdate(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
         updateClient()
         # return question, awnser
@@ -410,12 +428,21 @@ def askFinalQuestion():
         variables['crtContestant'] += 1
     else:
         variables['crtContestant'] = 0
+    
+    variables['nxtContestant'] = variables['crtContestant']
+    if variables['nxtContestant'] < len(variables['contestants']) - 1:
+        variables['nxtContestant'] += 1
+    else:
+        variables['nxtContestant'] = 0
         
     #if there are still questions left ask the question
-    if variables['cntQuestions'] < len(finalQuestions):
+    if variables['cntQuestions'] < len(finalQuestions) - 1:
         variables['gamemode'] = 4
         statusUpdate('Final Question ' + str(variables['cntRquestions']))
         variables['question'] = finalQuestions[variables['cntQuestions']][0]
+        variables['awnser'] = finalQuestions[variables['cntQuestions']][1]
+        variables['nxtQuestion'] = finalQuestions[variables['cntQuestions'] + 1][0]
+        variables['nxtAwnser'] = finalQuestions[variables['cntQuestions'] + 1][1]
         statusUpdate(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
         updateClient()
         # return question, awnser

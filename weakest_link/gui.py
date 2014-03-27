@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import pygame, sys, operator, os.path
 from pygame.locals import *
 
@@ -317,6 +317,8 @@ def start():
         startFrame.grid_forget()
         waitFrame.grid()
         isServerRunning()
+    else:
+        messagebox.showerror("Error", "Could not find server \"" + address.get() + "\"")
             
 def isServerRunning():
     global mainTopLevel, socket
@@ -342,6 +344,21 @@ def initTk(parent):
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     startFrame.columnconfigure(0, weight=1)
     startFrame.rowconfigure(0, weight=1)
+    
+    startMenu = Menu(parent)
+    parent['menu'] = startMenu
+    startFile = Menu(startMenu, tearoff=0)
+    startTools = Menu(startMenu, tearoff=0)
+    startHelp = Menu(startMenu, tearoff=0)
+    startMenu.add_cascade(menu=startFile, label='File')
+    startMenu.add_cascade(menu=startTools, label='Tools')
+    startMenu.add_cascade(menu=startHelp, label='Help')
+    
+    startFile.add_command(label='Exit', command=close)
+    
+    startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
+    
+    startHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
     
     address = StringVar()
     address.set(config['server']['bindAddress'])
