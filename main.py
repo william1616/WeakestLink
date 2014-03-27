@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 
 try:
-    import server, control, gui, misc
+    import server, control, gui, misc, prompt
 except ImportError:
     import importlib.machinery
     loader = importlib.machinery.SourceFileLoader("server", "./weakest_link/server.py")
