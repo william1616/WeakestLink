@@ -32,7 +32,8 @@ def varDeclaration():
         'crtContestant': -1, #current contestant key index
         'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final, 5 = head2head
         'time': False, #time up
-        'finalScores': [[None] * int(config['questions']['finalRndQCnt'] / 2), [None] * int(config['questions']['finalRndQCnt'] / 2)] #final scores
+        'finalScores': [[None] * int(config['questions']['finalRndQCnt'] / 2), [None] * int(config['questions']['finalRndQCnt'] / 2)], #final scores
+        'lastEliminated': ""
         }
 
 def statusUpdate(info):
@@ -98,38 +99,40 @@ class questionControl(threading.Thread):
         self.end = False
     def run(self):
         global socketList
-        while not self.end:
+        while True:
             self.question, self.awnser = askQuestion()
             self.newQuestion = False
             while not self.newQuestion:
                 receivedCommand = network.getMessageofType('cmd', socketList, False)
                 if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
                     break
-            if len(variables['contestants']) == 2:
+            if len(variables['contestants']) == 2 or self.end:
                 break
-        
-        variables['cntQuestions'] = 0
-        variables['cntRquestions'] = variables['crtContestant'] = 1
-        #crtContestant = 1 saves some work on gui end - check this if no of contestants becomes variable
-        for i in list(variables['contestants'].keys()): #set each contestatnts score to 0
-            variables['contestants'][i] = 0
-        statusUpdate('Final Round starting')
-        variables['gamemode'] = 0
-        updateClient()
-        time.sleep(1)
-        
-        while True:
-            self.question, self.awnser = askFinalQuestion()
+                
+        if not self.end:
+            variables['cntQuestions'] = 0
+            variables['cntRquestions'] = variables['crtContestant'] = 1
+            #crtContestant = 1 saves some work on gui end - check this if no of contestants becomes variable
+            for i in list(variables['contestants'].keys()): #set each contestatnts score to 0
+                variables['contestants'][i] = 0
+            statusUpdate('Final Round starting')
+            variables['gamemode'] = 0
+            updateClient()
+            time.sleep(1)
+            
             while True:
-                receivedCommand = network.getMessageofType('cmd', socketList)
-                if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
-                    finalQuestionHandler(receivedCommand, self.question, self.awnser)
+                self.question, self.awnser = askFinalQuestion()
+                while True:
+                    receivedCommand = network.getMessageofType('cmd', socketList)
+                    if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4:
+                        finalQuestionHandler(receivedCommand, self.question, self.awnser)
+                        break
+                if len(variables['contestants']) == 1:
+                    statusUpdate(str(list(variables['contestants'])[0]) + ' is the winner!')
+                    variables['gamemode'] = 0
+                    updateClient()
+                    self.end = True
                     break
-            if len(variables['contestants']) == 1:
-                statusUpdate(str(list(variables['contestants'])[0]) + ' is the winner!')
-                variables['gamemode'] = 0
-                updateClient()
-                break
                 
 
 def start():
@@ -328,9 +331,11 @@ def questionHandler(event, question, awnser):
             receivedCommand = network.getMessageofType('cmd', socketList)
             if isinstance(receivedCommand, int) and receivedCommand >= 0 and receivedCommand < len(variables['contestants']):
                 statusUpdate(list(variables['contestants'].keys())[receivedCommand] + ' you are the Weakest Link! Goodbye')
+                variables['lastEliminated'] = list(variables['contestants'].keys())[receivedCommand]
                 variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand])
                 variables['gamemode'] = 3
                 updateClient()
+                time.sleep(1)
                 break
     updateClient()
     if len(variables['contestants']) > 2:
@@ -379,7 +384,11 @@ def finalQuestionHandler(event, question, awnser):
         statusUpdate('Incorrect - ' + awnser)
         #if head2head remove the first incorect awnsering contestant
         if variables['cntRquestions'] > config['questions']['finalRndQCnt']:
+            variables['lastEliminated'] = list(variables['contestants'].keys())[variables['crtContestant']]
             variables['contestants'].pop(list(variables['contestants'].keys())[variables['crtContestant']])
+            variables['gamemode'] = 3
+            updateClient()
+            time.sleep(1)
         else:
             variables['finalScores'][variables['crtContestant']][floor(variables['cntQuestions'] / 2)] = False
     
@@ -403,7 +412,11 @@ def finalQuestionHandler(event, question, awnser):
             for key, value in dict(variables['contestants']).items():
                 if value != topScore:
                     statusUpdate(key + ' you are the Weakest Link! Goodbye')
+                    variables['lastEliminated'] = key
                     variables['contestants'].pop(key)
+                    variables['gamemode'] = 3
+                    updateClient()
+                    time.sleep(1)
     
     event = ''
     variables['cntRquestions'] += 1

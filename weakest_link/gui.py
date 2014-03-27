@@ -257,13 +257,21 @@ def drawStart(text1, text2=None):
         displaySurface.blit(text2, textRect2)
         
 def displayWinner(winner):
+    drawCentreText(winner + ' is the Winner!')
+    
+def displayEliminated(contestant):
+    drawCentreText(contestant + ' you are the Weakest Link Goodbye!')
+    
+def drawCentreText(text):
     displaySurface.fill(blue)
     subTitleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height() / (160 / 11)))
     
-    text = subTitleFont.render(winner + ' is the Winner', True, black)
-    textRect = text.get_rect()
-    textRect.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / 2))
-    displaySurface.blit(text, textRect)
+    # textObj = subTitleFont.render(text, True, black)
+    # textRect = textObj.get_rect()
+    # textRect.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / 3))
+    # displaySurface.blit(textObj, textRect)
+    
+    wrapText(displaySurface, (int(displaySurface.get_width() / 80), int(displaySurface.get_height() / 3), int(displaySurface.get_width() - (displaySurface.get_width() / 80)), int(displaySurface.get_height() - (displaySurface.get_height() / 80))), text, subTitleFont, black)
 
 def gameLoop():
     global socket
@@ -288,6 +296,8 @@ def gameLoop():
                 drawCorrect(variables['cntRounds'], variables['contestants'])
             elif variables['gamemode'] == 2 and variables['time']:
                 drawTime(variables['cntRounds'], variables['contestants'])
+            elif variables['gamemode'] == 3:
+                displayEliminated(variables['lastEliminated'])
             elif variables['gamemode'] == 1:
                 drawQuestion(variables['cntRounds'], variables['cntRquestions'], variables['question'], variables['correct'], variables['money'], variables['bank'])
             elif variables['gamemode'] == 4 and len(variables['contestants']) > 1:
