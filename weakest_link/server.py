@@ -27,7 +27,7 @@ def varDeclaration():
         'cntRquestions': 1, #question counter per round
         'bank': 0,
         'question': '',
-        'contestants': OrderedDict({'bill': 0,'ben': 0,'bob': 0,'cat': 0,'hat': 0,'matt': 0,'mouse': 0,'man': 0}), #list of contestants creating OrderedDict randomises the order
+        'contestants': OrderedDict(),
         'money': [0, 50,100,200,300,400,500,1000,2500,5000],
         'crtContestant': -1, #current contestant key index
         'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final, 5 = head2head
@@ -35,7 +35,13 @@ def varDeclaration():
         'finalScores': [[None] * int(config['questions']['finalRndQCnt'] / 2), [None] * int(config['questions']['finalRndQCnt'] / 2)], #final scores
         'lastEliminated': ""
         }
+    for i in contestantGenerator():
+        variables['contestants'][i] = 0
 
+def contestantGenerator():
+    for i in range(0, config['questions']['contestantCnt']):
+        yield "Contestant" + str(i)
+        
 def statusUpdate(info):
     global displayStatus, status
     
@@ -104,10 +110,10 @@ class questionControl(threading.Thread):
             self.newQuestion = False
             while not self.newQuestion:
                 receivedCommand = network.getMessageofType('cmd', socketList, False)
-                if receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
+                if receivedCommand and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
                     break
                 questionNo = network.getMessageofType('gotoQu', socketList, False)
-                if questionNo > 0 and questionNo <= len(questions):
+                if questionNo and questionNo > 0 and questionNo <= len(questions):
                     variables['cntQuestions'] = questionNo
                     break
             if len(variables['contestants']) == 2 or self.end:
@@ -154,7 +160,7 @@ def initListner():
     listner.start()
 
 def initTk(parent):
-    global displayStatus, startFrame, mainFrame, listner
+    global displayStatus, startFrame, mainFrame, contestantTopLevel, listner
     print('Initiating GUI...')
     
     startFrame = ttk.Frame(parent, padding="3 3 3 3")
@@ -175,11 +181,11 @@ def initTk(parent):
     
     startTools.add_command(label='Select Main Question File', command=selectMainQuestionFile)
     startTools.add_command(label='Select Final Question File', command=selectFinalQuestionFile)
+    startTools.add_command(label='Edit Contestant List', command=editContestants)
     startTools.add_separator()
     startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
     
     startHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
-    
     
     mainFrame = ttk.Frame(parent, padding="3 3 3 3")
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
@@ -199,9 +205,37 @@ def initTk(parent):
     ttk.Label(mainFrame, text='Status', width=100).grid(column=1, row=1, sticky=N)
     ttk.Label(mainFrame, textvariable=displayStatus, width=100).grid(column=1, row=2, sticky=N)
     
+    contestantTopLevel = Toplevel()
+    contestantTopLevel.title(config['Tk']['window_title'])
+    contestantTopLevel.resizable(False, False)
+    contestantTopLevel.withdraw()
+    
+    ttk.Button(contestantTopLevel, text='Update', command=updateContestants).grid(column=0, row=8, sticky=N)
+    ttk.Button(contestantTopLevel, text='Cancel', command=contestantTopLevel.withdraw).grid(column=1, row=8, sticky=N)
+    
     parent.protocol("WM_DELETE_WINDOW", lambda: close(parent))
     
     print('GUI Initiated')
+    
+def editContestants():
+    global variables, contestantTopLevel, contestantNameEntry, contestantNameValues
+    contestantNameEntry = []
+    contestantNameValues = []
+    #values wasn't working for some reason hence messy hack around
+    for i, contestant in zip(range(0, len(variables['contestants'])), [contestants for contestants, score in variables['contestants'].items()]):
+        contestantNameValues.append(StringVar())
+        contestantNameValues[i].set(contestant)
+        contestantNameEntry.append(ttk.Entry(contestantTopLevel, textvariable=contestantNameValues[i]))
+        contestantNameEntry[i].grid(column=0, row=i, columnspan=2, sticky=N)
+    contestantTopLevel.deiconify()
+    
+def updateContestants():
+    global variables, contestantTopLevel, contestantNameEntry, contestantNameValues
+    #values wasn't working for some reason hence messy hack around
+    contestantTopLevel.withdraw()
+    for contestantEntry, contestantNewName, contestantOldName in zip(contestantNameEntry, contestantNameValues, [contestants for contestants, score in variables['contestants'].items()]):
+        contestantEntry.grid_forget()
+        variables['contestants'][contestantNewName.get()] = variables['contestants'].pop(contestantOldName) 
     
 def selectMainQuestionFile():
     global config
