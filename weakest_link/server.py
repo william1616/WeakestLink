@@ -32,7 +32,8 @@ def varDeclaration():
         'crtContestant': -1, #current contestant key index
         'gamemode': -1, #-1 = still listing, 0 = starting, 1 = questions, 2 = voting, 3 = contestant succesfully removed, 4 = final, 5 = head2head
         'time': False, #time up
-        'finalScores': [[None] * int(config['questions']['finalRndQCnt'] / 2), [None] * int(config['questions']['finalRndQCnt'] / 2)] #final scores
+        'finalScores': [[None] * int(config['questions']['finalRndQCnt'] / 2), [None] * int(config['questions']['finalRndQCnt'] / 2)], #final scores
+        'lastEliminated': ""
         }
 
 def statusUpdate(info):
@@ -291,9 +292,11 @@ def questionHandler(event, question, awnser):
             receivedCommand = network.getMessageofType('cmd', socketList)
             if isinstance(receivedCommand, int) and receivedCommand >= 0 and receivedCommand < len(variables['contestants']):
                 statusUpdate(list(variables['contestants'].keys())[receivedCommand] + ' you are the Weakest Link! Goodbye')
+                variables['lastEliminated'] = list(variables['contestants'].keys())[receivedCommand]
                 variables['contestants'].pop(list(variables['contestants'].keys())[receivedCommand])
                 variables['gamemode'] = 3
                 updateClient()
+                time.sleep(1)
                 break
     updateClient()
     if len(variables['contestants']) > 2:
@@ -342,7 +345,11 @@ def finalQuestionHandler(event, question, awnser):
         statusUpdate('Incorrect - ' + awnser)
         #if head2head remove the first incorect awnsering contestant
         if variables['cntRquestions'] > config['questions']['finalRndQCnt']:
+            variables['lastEliminated'] = list(variables['contestants'].keys())[variables['crtContestant']]
             variables['contestants'].pop(list(variables['contestants'].keys())[variables['crtContestant']])
+            variables['gamemode'] = 3
+            updateClient()
+            time.sleep(1)
         else:
             variables['finalScores'][variables['crtContestant']][floor(variables['cntQuestions'] / 2)] = False
     
@@ -366,7 +373,11 @@ def finalQuestionHandler(event, question, awnser):
             for key, value in dict(variables['contestants']).items():
                 if value != topScore:
                     statusUpdate(key + ' you are the Weakest Link! Goodbye')
+                    variables['lastEliminated'] = key
                     variables['contestants'].pop(key)
+                    variables['gamemode'] = 3
+                    updateClient()
+                    time.sleep(1)
     
     event = ''
     variables['cntRquestions'] += 1
