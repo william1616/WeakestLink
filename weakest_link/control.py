@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, simpledialog
 import time, math, os.path
 
 path = os.path.dirname(__file__)
@@ -20,6 +20,8 @@ def start():
         startFrame.grid_forget()
         waitFrame.grid()
         isServerRunning()
+    else:
+        messagebox.showerror("Error", "Could not find server \"" + address.get() + "\"")
 
 def isServerRunning():
     global socket, startTopLevel, mainTopLevel
@@ -41,7 +43,6 @@ def removeContestant(contestantIndex):
     mainTopLevel.deiconify()
     sendCommand(contestantIndex)
     
-
 def sendCommand(cmd):
     global socket
     disableButton()
@@ -80,8 +81,6 @@ def initTk(parent):
     
     startFile.add_command(label='Exit', command=close)
     
-    startTools.add_command(label='Select Main Question File', command=selectMainQuestionFile)
-    startTools.add_command(label='Select Final Question File', command=selectFinalQuestionFile)
     startTools.add_command(label='Go to Question', command=gotoQuestion)
     startTools.add_separator()
     startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
@@ -186,7 +185,14 @@ def initTk(parent):
     voteTopLevel.protocol("WM_DELETE_WINDOW", close)
 
 def gotoQuestion():
-    pass
+    global variables, socket
+    if 'variables' in globals() and variables['gamemode'] != -1:
+        questionNo = simpledialog.askinteger("Go to question...", "Question Number:", initialvalue=variables['cntQuestions'])
+        if questionNo:
+            disableButton()
+            network.sendMessage('gotoQu', questionNo, socket)
+    else:
+        messagebox.showerror("Error", "Server has not Started Running Yet!")
     
 def selectMainQuestionFile():
     global config

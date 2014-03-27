@@ -1,4 +1,4 @@
- from tkinter import *
+from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from collections import OrderedDict
 from operator import itemgetter
@@ -104,7 +104,11 @@ class questionControl(threading.Thread):
             self.newQuestion = False
             while not self.newQuestion:
                 receivedCommand = network.getMessageofType('cmd', socketList, False)
-                if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
+                if receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, self.question, self.awnser) == True:
+                    break
+                questionNo = network.getMessageofType('gotoQu', socketList, False)
+                if questionNo > 0 and questionNo <= len(questions):
+                    variables['cntQuestions'] = questionNo
                     break
             if len(variables['contestants']) == 2 or self.end:
                 break
@@ -171,7 +175,6 @@ def initTk(parent):
     
     startTools.add_command(label='Select Main Question File', command=selectMainQuestionFile)
     startTools.add_command(label='Select Final Question File', command=selectFinalQuestionFile)
-    startTools.add_command(label='Goto Question', command=gotoQuestion)
     startTools.add_separator()
     startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
     
@@ -199,11 +202,6 @@ def initTk(parent):
     parent.protocol("WM_DELETE_WINDOW", lambda: close(parent))
     
     print('GUI Initiated')
-
-def gotoQuestion():
-    global variables, questionThread
-    variables['cntQuestions'] = simpledialog.askinteger("Go to question...", "Question Number:", initialvalue=variables['cntQuestions'])
-    questionThread.newQuestion = True
     
 def selectMainQuestionFile():
     global config
