@@ -297,12 +297,16 @@ def variableUpdates():
     except TclError:
         #dont call the function again
         pass
+        
+def netTypesDeclaration():
+    network.addUsedType('variables')
 
 def setup():
     global config
     print('Importing Config...')
     config = misc.initConfig()
     print('Config Imported')
+    netTypesDeclaration()
 
 if __name__ == '__main__':
     setup()

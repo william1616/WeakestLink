@@ -13,6 +13,7 @@ debug = True
 uID = 1
 messages = {}
 check = {}
+usedTypes = []
 
 def getMessage(socketList, waitForMessage=True): #this function should not be called use getMessageofType() instead
     global messages, check, uID
@@ -35,7 +36,8 @@ def getMessage(socketList, waitForMessage=True): #this function should not be ca
         for key in list(messages.keys()):
             if hashlib.sha1(messages[key]).hexdigest() == check[key]:
                 msg = json.loads(messages[key].decode('UTF-8'))
-                return msg['type'], key
+                if msg['type'] in usedTypes:
+                    return msg['type'], key
             else:
                 messages.pop(key)
                 check.pop(key)
@@ -58,13 +60,25 @@ def getMessageofType(type, socketList, waitForMessage=True):
         return None
 
 def sendMessage(type, content, socketObj):
-    global messages, check
     msg = json.dumps({'type': type, 'content': json.dumps(content)}).encode('UTF-8')
     msgCheck = hashlib.sha1(msg).hexdigest()
     bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')
     bytesMsg = b'|' + msg + b'|' + bytesMsgCheck + b'|'
     socketObj.send(bytesMsg)
     misc.log('Sent the following Message: '+ str(bytesMsg))
+    
+def addUsedType(type):
+    global usedTypes
+    usedTypes.append(type)
+    misc.log('Adding type: ' + type + ' to usedType list')
+    
+def removeUsedType(type):
+    global usedTypes
+    try:
+        usedTypes.remove(type)
+        misc.log('Removing type: ' + type + ' from usedType list')
+    except ValueError:
+        misc.log('Type: \'' + type + '\' not in list - ignoring')
 
 def initServerSocket(bindAddress, bindPort):
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

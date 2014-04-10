@@ -532,11 +532,17 @@ def updateClient():
     for socketObj in socketList:
         network.sendMessage('variables', variables, socketObj)
 
+def netTypesDeclaration():
+    network.addUsedType('cmd')
+    network.addUsedType('gotoQu')
+    network.addUsedType('pmsg')
+        
 def setup():
     global config
     print('Importing Config...')
     config = misc.initConfig()
     print('Config Imported')
+    netTypesDeclaration()
     varDeclaration()
         
 if __name__ == '__main__':

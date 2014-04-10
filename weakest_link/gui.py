@@ -387,12 +387,16 @@ def close():
     mainTopLevel.destroy()
     pygame.quit()
 
+def netTypesDeclaration():
+    network.addUsedType('variables')
+    
 def setup():
     global socket, config
     socket = network.initClientSocket()
     print('Importing Config...')
     config = misc.initConfig()
     print('Config Imported')
+    netTypesDeclaration()
 
 if __name__ == '__main__':
     setup()

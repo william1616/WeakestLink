@@ -155,12 +155,17 @@ def close():
     if mainTopLevel.config()['class'][4] == 'Toplevel': mainTopLevel.root.deiconify()
     mainTopLevel.destroy()
 
+def netTypesDeclaration():
+    network.addUsedType('variables')
+    network.addUsedType('pmsg')
+    
 def setup():
     global socket, config
     socket = network.initClientSocket()
     print('Importing Config...')
     config = misc.initConfig()
     print('Config Imported')
+    netTypesDeclaration()
 
 if __name__ == '__main__':
     setup()
