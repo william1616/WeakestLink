@@ -43,9 +43,9 @@ def variableUpdates():
         message.set(recvMessage)
     
     try:
-        #run this function again in 100ms
+        #run this function again in 1000ms
         if mainTopLevel.config()['class'][4] == 'Tk':
-            mainTopLevel.after(100, variableUpdates)
+            mainTopLevel.after(1000, variableUpdates)
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
             mainTopLevel.root.after(100, variableUpdates)
     except TclError:
