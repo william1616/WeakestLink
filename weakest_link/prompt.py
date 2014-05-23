@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, font
 import os.path
 
 path = os.path.dirname(__file__)
@@ -81,6 +81,9 @@ def initTk(parent):
     
     mainTopLevel = parent
     
+    mainFont = font.Font(family="Arial", size=12)
+    titleFont = font.Font(family="Arial", size=16, underline=True)
+    
     startFrame = ttk.Frame(parent, padding="3 3 3 3")
     startFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     startFrame.columnconfigure(0, weight=1)
@@ -108,19 +111,23 @@ def initTk(parent):
     contestants = StringVar()
     message = StringVar()
     
-    ttk.Label(mainFrame, textvariable=status).grid(column=0, row=0, columnspan=4, sticky=N)
-    ttk.Label(mainFrame, text="Question", width=133).grid(column=1, row=1, sticky=N)
-    ttk.Label(mainFrame, text="Awnser", width=56).grid(column=2, row=1, sticky=N)
-    ttk.Label(mainFrame, text="Current").grid(column=0, row=2, sticky=N)
-    ttk.Label(mainFrame, text="Next").grid(column=0, row=3, sticky=N)
-    ttk.Label(mainFrame, textvariable=question, wraplength=600, width=133).grid(column=1, row=2, sticky=N)
-    ttk.Label(mainFrame, textvariable=awnser, wraplength=250, width=56).grid(column=2, row=2, sticky=N)
-    ttk.Label(mainFrame, textvariable=nextQuestion, wraplength=600, width=133).grid(column=1, row=3, sticky=N)
-    ttk.Label(mainFrame, textvariable=nextAwnser, wraplength=250, width=56).grid(column=2, row=3, sticky=N)
-    ttk.Label(mainFrame, text="Contestants").grid(column=3, row=1, sticky=N)
-    ttk.Label(mainFrame, textvariable=contestants).grid(column=3, row=2, rowspan=2, sticky=N)
-    ttk.Label(mainFrame, text="Messages").grid(column=0, row=4, sticky=N)
-    ttk.Label(mainFrame, textvariable=message, width=120).grid(column=1, row=4, rowspan=4, sticky=N)
+    columnWidth = 25
+    wrapMultipilcationConst = 9
+    wrapWidth = columnWidth * wrapMultipilcationConst
+    
+    ttk.Label(mainFrame, textvariable=status, font=titleFont).grid(column=0, row=0, columnspan=4, sticky=N)
+    ttk.Label(mainFrame, text="Question", width=columnWidth, font=titleFont).grid(column=1, row=1, sticky=(W, N))
+    ttk.Label(mainFrame, text="Awnser", width=columnWidth, font=titleFont).grid(column=2, row=1, sticky=(W, N))
+    ttk.Label(mainFrame, text="Current", font=titleFont).grid(column=0, row=2, sticky=(W, N))
+    ttk.Label(mainFrame, text="Next", font=titleFont).grid(column=0, row=3, sticky=(W, N))
+    ttk.Label(mainFrame, textvariable=question, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=1, row=2, sticky=(W, N))
+    ttk.Label(mainFrame, textvariable=awnser, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=2, row=2, sticky=(W, N))
+    ttk.Label(mainFrame, textvariable=nextQuestion, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=1, row=3, sticky=(W, N))
+    ttk.Label(mainFrame, textvariable=nextAwnser, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=2, row=3, sticky=(W, N))
+    ttk.Label(mainFrame, text="Contestants", font=titleFont).grid(column=3, row=1, sticky=(W, N))
+    ttk.Label(mainFrame, textvariable=contestants, font=mainFont).grid(column=3, row=2, rowspan=2, sticky=(W, N))
+    ttk.Label(mainFrame, text="Messages", font=titleFont).grid(column=0, row=4, sticky=N)
+    ttk.Label(mainFrame, textvariable=message, font=mainFont, width=columnWidth * 3).grid(column=1, row=4, columnspan=3, sticky=(W, N, S))
     
     mainMenu = Menu(parent)
     parent['menu'] = mainMenu
