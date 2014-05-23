@@ -1,7 +1,7 @@
 from cx_Freeze import setup, Executable
 import sys, datetime, json, os
 
-with open('build\\buildData.json', 'r') as file:
+with open('build//buildData.json', 'r') as file:
     buildData = json.load(file)
 
 if input('Release Build [n]: ') == 'y':
@@ -20,18 +20,18 @@ else:
 
 buildData['buildNo'] += 1
 
-with open('build\\buildData.json', 'w') as file:
+with open('build//buildData.json', 'w') as file:
     json.dump(buildData, file, indent=4)
     
 # Dependencies are automatically detected, but it might need
 # fine tuning.
-buildOptions = dict(packages = ['network', 'misc', 'control', 'gui', 'server', 'prompt', 'tkinter', 'csv', 'threading', 'time', 'sys', 'json', 'os', 'network', 'datetime', 'math', 'operator', 'pygame', 'collections', 'hashlib'], 
+buildOptions = dict(packages = ['network', 'misc', 'control', 'gui', 'server', 'prompt', 'tkinter', 'csv', 'threading', 'time', 'sys', 'json', 'os', 'network', 'datetime', 'math', 'operator', 'pygame', 'collections', 'hashlib', 'socket', 'select'], 
     excludes = [], 
-    path = sys.path.extend([os.path.dirname(__file__), os.path.join(os.path.dirname(__file__), './/weakest_link')]),
+    path = sys.path.extend(['.', './/weakest_link']),
     include_files = [('config.json',''), ('resources//questions.csv','resources//questions.csv'), ('resources//redPlaceholder.png','resources//redPlaceholder.png'), ('resources//bluePlaceholder.png','resources//bluePlaceholder.png'), ('resources//correctBlue.png','resources//correctBlue.png'), ('resources//incorrectRed.png','resources//incorrectRed.png'), ('resources//neutralBlue.png','resources//neutralBlue.png')],
     create_shared_zip = True,
     compressed = True,
-    build_exe = 'build\\' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + ' ' + versionName)
+    build_exe = 'build//' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + ' ' + versionName)
 
 import sys
 base = 'Win32GUI' if sys.platform=='win32' else None
