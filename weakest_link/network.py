@@ -1,4 +1,4 @@
-import socket, hashlib, select, json, os.path
+import socket, hashlib, select, os.path, pickle
 from collections import OrderedDict
 
 path = os.path.dirname(__file__)
@@ -14,6 +14,11 @@ uID = 1
 messages = {}
 check = {}
 usedTypes = []
+
+class msgClass():
+    def __init__(self, type, content):
+        self.type = type
+        self.content = content
 
 def getMessage(socketList, waitForMessage=True): #this function should not be called use getMessageofType() instead
     global messages, check, uID
@@ -31,21 +36,25 @@ def getMessage(socketList, waitForMessage=True): #this function should not be ca
                     messages[uID] = received[i]
                     misc.log('Received the following Message: '+ str(received[i]))
                   elif i % 2 == 1:
-                    check[uID] = json.loads(received[i].decode('UTF-8'))
+                    check[uID] = pickle.loads(received[i])
                     uID += 1
         for key in list(messages.keys()):
             if hashlib.sha1(messages[key]).hexdigest() == check[key]:
-                msg = json.loads(messages[key].decode('UTF-8'))
-                if msg['type'] in usedTypes:
-                    return msg['type'], key
+                msg = pickle.loads(messages[key])
+                if msg.type in usedTypes:
+                    return msg.type, key
+                else:
+                    messages.pop(key)
+                    check.pop(key)
             else:
+                misc.log('Message Check Failed: ' + messages[key])
                 messages.pop(key)
                 check.pop(key)
         first = False
     return None, None
         
 def getMessagefromStack(key): #this function should not be called use getMessageofType() instead
-    temp = json.loads(json.loads(messages[key].decode('UTF-8'))['content'], object_pairs_hook = OrderedDict)
+    temp = pickle.loads(messages[key]).content
     messages.pop(key)
     check.pop(key)
     return temp #temp deleted when function returns as local
@@ -60,10 +69,8 @@ def getMessageofType(type, socketList, waitForMessage=True):
         return None
 
 def sendMessage(type, content, socketObj):
-    msg = json.dumps({'type': type, 'content': json.dumps(content)}).encode('UTF-8')
-    msgCheck = hashlib.sha1(msg).hexdigest()
-    bytesMsgCheck = json.dumps(msgCheck).encode('UTF-8')
-    bytesMsg = b'|' + msg + b'|' + bytesMsgCheck + b'|'
+    msg = pickle.dumps(msgClass(type, content))
+    bytesMsg = b'|' + msg + b'|' + pickle.dumps(hashlib.sha1(msg).hexdigest()) + b'|'
     socketObj.send(bytesMsg)
     misc.log('Sent the following Message: '+ str(bytesMsg))
     
