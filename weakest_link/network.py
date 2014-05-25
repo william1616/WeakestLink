@@ -38,7 +38,7 @@ def getMessage(socketList, waitForMessage=True): #this function should not be ca
                   elif i % 2 == 1:
                     check[uID] = pickle.loads(received[i])
                     uID += 1
-        for key in list(messages.keys()):
+        for key in messages:
             if hashlib.sha1(messages[key]).hexdigest() == check[key]:
                 msg = pickle.loads(messages[key])
                 if msg.type in usedTypes:
@@ -67,7 +67,12 @@ def getMessageofType(type, socketList, waitForMessage=True):
         return getMessagefromStack(receivedKey)
     else:
         return None
-
+        
+def messageInBuffer(type, socketList):
+    global messages
+    receivedType, receivedKey = getMessage(socketList, False)
+    return receivedType == type
+    
 def sendMessage(type, content, socketObj):
     msg = pickle.dumps(msgClass(type, content))
     bytesMsg = b'|' + msg + b'|' + pickle.dumps(hashlib.sha1(msg).hexdigest()) + b'|'
