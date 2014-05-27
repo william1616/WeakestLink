@@ -14,14 +14,30 @@ except ImportError:
     
 usedTypes = []
     
-class messageQueue(Queue): #prevent unused types from being returned/queued        
+class messageQueue(Queue): #prevent unused types from being returned/queued
+    def __init__(self, maxsize=0):
+        super().__init__(maxsize)
+        self.types = {}
+        
+    def put(self, item, block=True, timeout=None):
+        super().put(item, block, timeout)
+        if item.type not in self.types: #if the type is unrecognised add it to the dict
+            self.types[item.type] = 1
+        else: #otherwise just increment it
+            self.types[item.type] += 1
+
     def get(self, type, block=True, timeout=None):
         global usedTypes
         item = super().get(block, timeout)
-        while item.type not in usedTypes or item.type != type:
+        while item.type != type or item.type not in usedTypes:
             self.task_done()
-            if item.type != type: self.put(item)
+            if item.type in usedTypes:
+                if item.type != type: #put the item back if its a usedType but not of the type specified
+                    self.put(item)
+            else: #if the item is not put back in the queue decrease the number of that type in the queue
+                self.types[item.type] -= 1
             item = super().get(block, timeout)
+        self.types[item.type] -= 1 #decrease the number of that type in the queue
         return item
 
 receivedMessages = messageQueue()
@@ -40,7 +56,7 @@ class msgClass():
         return self.generateHash() == self.hash
 
 def getMessage(socketObj):
-    global usedTypes, receivedMessages
+    global receivedMessages
     while True:
         try:
             received = socketObj.recv(4096)
@@ -56,7 +72,7 @@ def getMessage(socketObj):
             misc.log('Message Check Failed: \'' + str(exception) + '\'')
         else:
             receivedMessages.put(received, block=False)
-            misc.log('Sent the following Message: \''+ str(received.content) + '\' of type \'' + str(received.type) + '\'')
+            misc.log('Received the following Message: \''+ str(received.content) + '\' of type \'' + str(received.type) + '\'')
                 
 def addListningDaemon(*args):
     global receivedMessages
@@ -73,6 +89,10 @@ def getMessageofType(type, waitForMessage=True):
         return None
     else:
         return msg.content
+        
+def messageInBuffer(type=None):
+    global receivedMessages
+    return (not type and not receivedMessages.empty() or type in receivedMessages.types and receivedMessages.types[type] > 0)
     
 def sendMessage(type, content, socketObj):
     msg = msgClass(type, content)
@@ -116,7 +136,7 @@ def attemptConnect(socketObj, address, port):
         misc.log('Starting Listning Daemon')
         return True
     except OSError as exception:
-        misc.log('Failed to connect to ' + str(address) + ' on port ' + str(port) + ' - \'' + exception + '\'')
+        misc.log('Failed to connect to ' + str(address) + ' on port ' + str(port) + ' - \'' + str(exception) + '\'')
         return False
 
 def initClientSocket():
