@@ -1,5 +1,8 @@
 import socket, hashlib, select, os.path, pickle
+from  threading import Thread
+from queue import Queue, Empty
 from collections import OrderedDict
+from time import sleep
 
 path = os.path.dirname(__file__)
 try:
@@ -8,76 +11,73 @@ except ImportError:
     import importlib.machinery
     loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
     misc = loader.load_module("misc")
-
-debug = True
-uID = 1
-messages = {}
-check = {}
+    
 usedTypes = []
+    
+class messageQueue(Queue): #prevent unused types from being returned/queued        
+    def get(self, type, block=True, timeout=None):
+        global usedTypes
+        item = super().get(block, timeout)
+        while item.type not in usedTypes or item.type != type:
+            self.task_done()
+            if item.type != type: self.put(item)
+            item = super().get(block, timeout)
+        return item
+
+receivedMessages = messageQueue()
 
 class msgClass():
     def __init__(self, type, content):
         self.type = type
         self.content = content
-
-def getMessage(socketList, waitForMessage=True): #this function should not be called use getMessageofType() instead
-    global messages, check, uID
-    received = []
-    first = True
-    while first or waitForMessage:
-        for socketObj in socketList:
-            readable, writable, err = select.select([socketObj.fileno()], [], [], 0.1)
-            if readable:
-                received = socketObj.recv(4096).split(b'|')
-                while received.count(b'') > 0:
-                  received.remove(b'')
-                for i in range(0, len(received)):
-                  if i % 2 == 0:
-                    messages[uID] = received[i]
-                    misc.log('Received the following Message: '+ str(received[i]))
-                  elif i % 2 == 1:
-                    check[uID] = pickle.loads(received[i])
-                    uID += 1
-        for key in messages:
-            if hashlib.sha1(messages[key]).hexdigest() == check[key]:
-                msg = pickle.loads(messages[key])
-                if msg.type in usedTypes:
-                    return msg.type, key
-                else:
-                    messages.pop(key)
-                    check.pop(key)
-            else:
-                misc.log('Message Check Failed: ' + messages[key])
-                messages.pop(key)
-                check.pop(key)
-        first = False
-    return None, None
-        
-def getMessagefromStack(key): #this function should not be called use getMessageofType() instead
-    temp = pickle.loads(messages[key]).content
-    messages.pop(key)
-    check.pop(key)
-    return temp #temp deleted when function returns as local
+        self.hash = self.generateHash()
     
-def getMessageofType(type, socketList, waitForMessage=True):
-    receivedType, receivedKey = getMessage(socketList, waitForMessage)
-    while waitForMessage and receivedType != type:
-        receivedType, receivedKey = getMessage(socketList)
-    if receivedKey and receivedType == type:
-        return getMessagefromStack(receivedKey)
-    else:
-        return None
+    def generateHash(self):
+        #use pickle as .encode() only works for text
+        return hashlib.sha1(pickle.dumps(self.content)).hexdigest()
         
-def messageInBuffer(type, socketList):
-    global messages
-    receivedType, receivedKey = getMessage(socketList, False)
-    return receivedType == type
+    def checkHash(self):
+        return self.generateHash() == self.hash
+
+def getMessage(socketObj):
+    global usedTypes, receivedMessages
+    while True:
+        try:
+            received = socketObj.recv(4096)
+        except ConnectionResetError as exception:
+            misc.log(str(exception))
+            misc.log('Stopping Listning Daemon')
+            break
+        try:
+            received = pickle.loads(received)
+            if received.checkHash() == False:
+                raise ValueError('The Checksum Failed')
+        except (EOFError, ValueError, AttributeError) as exception:
+            misc.log('Message Check Failed: \'' + str(exception) + '\'')
+        else:
+            receivedMessages.put(received, block=False)
+            misc.log('Sent the following Message: \''+ str(received.content) + '\' of type \'' + str(received.type) + '\'')
+                
+def addListningDaemon(*args):
+    global receivedMessages
+    for socket in args:
+        listner = Thread(target=getMessage, args=(socket,))
+        listner.setDaemon(True)
+        listner.start()
+    
+def getMessageofType(type, waitForMessage=True):
+    global receivedMessages
+    try:
+        msg = receivedMessages.get(type, waitForMessage)
+    except Empty:
+        return None
+    else:
+        return msg.content
     
 def sendMessage(type, content, socketObj):
-    msg = pickle.dumps(msgClass(type, content))
-    bytesMsg = b'|' + msg + b'|' + pickle.dumps(hashlib.sha1(msg).hexdigest()) + b'|'
-    socketObj.send(bytesMsg)
-    misc.log('Sent the following Message: '+ str(bytesMsg))
+    msg = msgClass(type, content)
+    socketObj.send(pickle.dumps(msg))
+    misc.log('Sent the following Message: \''+ str(msg.content) + '\' of type \'' + str(msg.type) + '\'')
     
 def addUsedType(type):
     global usedTypes
@@ -95,13 +95,15 @@ def removeUsedType(type):
 def initServerSocket(bindAddress, bindPort):
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.bind((bindAddress, bindPort))
-    serversocket.listen(5)
+    serversocket.listen(socket.SOMAXCONN)
     return serversocket
     
 def serverListner(serversocket):
-    readable, writable, err = select.select([serversocket.fileno()], [], [], 0.1)
+    readable, writable, err = select.select([serversocket.fileno()], [], [], 0.01)
     if readable:
         clientsocket, address = serversocket.accept()
+        clientsocket.setblocking(True)
+        addListningDaemon(clientsocket)
         return clientsocket, address
     return None, None
 
@@ -110,19 +112,24 @@ def attemptConnect(socketObj, address, port):
         misc.log('Attempting to connect to ' + str(address) + ' on port ' + str(port))
         socketObj.connect((address, port))
         misc.log('Successfully connected to ' + str(address) + ' on port ' + str(port))
+        addListningDaemon(socketObj)
+        misc.log('Starting Listning Daemon')
         return True
-    except:
-        misc.log('Failed to connect to ' + str(address) + ' on port ' + str(port))
+    except OSError as exception:
+        misc.log('Failed to connect to ' + str(address) + ' on port ' + str(port) + ' - \'' + exception + '\'')
         return False
 
 def initClientSocket():
     clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    clientsocket.setblocking(True)
     return clientsocket
         
 def localClient():
     clientsocket = initClientSocket()
-    clientsocket.connect(('localhost',1024))
-    return clientsocket
+    if attemptConnect(clientsocket, 'localhost', 1024):
+        return clientsocket
+    else:
+        return None
 
 def localServer():
     serversocket = initServerSocket('localhost',1024)
