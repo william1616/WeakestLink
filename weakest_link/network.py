@@ -28,17 +28,24 @@ class messageQueue(Queue): #prevent unused types from being returned/queued
 
     def get(self, type, block=True, timeout=None):
         global usedTypes
-        item = super().get(block, timeout)
-        while item.type != type or item.type not in usedTypes:
-            self.task_done()
-            if item.type in usedTypes:
-                if item.type != type: #put the item back if its a usedType but not of the type specified
-                    self.put(item)
-            else: #if the item is not put back in the queue decrease the number of that type in the queue
-                self.types[item.type] -= 1
-            item = super().get(block, timeout)
-        self.types[item.type] -= 1 #decrease the number of that type in the queue
-        return item
+        try:
+            while block or self.types[type] > 0:
+                item = super().get(block, timeout)
+                misc.log('Got item \'' + str(item.type) + '\' from Stack')
+                self.task_done()
+                if item.type in usedTypes:
+                    self.types[item.type] -= 1 #decrease the number of that type in the queue
+                    if item.type == type: #put the item back if its a usedType but not of the type specified
+                        misc.log('Stack Size: ' + str(self.qsize()))
+                        return item
+                    else:
+                        self.put(item)
+                        misc.log('Putting Item \'' + str(item.type) + '\' into Stack')
+                else: #if the item is not put back in the queue decrease the number of that type in the queue
+                    self.types[item.type] -= 1
+            raise Empty()
+        except KeyError:
+            raise Empty()
 
 receivedMessages = messageQueue()
 
@@ -88,6 +95,7 @@ def getMessageofType(type, waitForMessage=True):
     except Empty:
         return None
     else:
+        misc.log('Retreived Message: \'' + str(msg.content) + '\' of type \'' + str(msg.type) + '\'')
         return msg.content
         
 def messageInBuffer(type=None):
@@ -98,6 +106,7 @@ def sendMessage(type, content, socketObj):
     msg = msgClass(type, content)
     socketObj.send(pickle.dumps(msg))
     misc.log('Sent the following Message: \''+ str(msg.content) + '\' of type \'' + str(msg.type) + '\'')
+    sleep(0.005) #allow time for the message to be processed before sending another message
     
 def addUsedType(type):
     global usedTypes
