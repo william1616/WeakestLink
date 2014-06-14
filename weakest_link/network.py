@@ -52,7 +52,7 @@ receivedMessages = messageQueue()
 class msgClass():
     def __init__(self, type, content):
         self.type = type
-        self.content = content
+        self.content = pickle.dumps(content)
         self.hash = self.generateHash()
     
     def generateHash(self):
@@ -61,6 +61,9 @@ class msgClass():
         
     def checkHash(self):
         return self.generateHash() == self.hash
+        
+    def getContent(self):
+        return pickle.loads(self.content)
 
 def getMessage(socketObj):
     global receivedMessages
@@ -79,7 +82,7 @@ def getMessage(socketObj):
             misc.log('Message Check Failed: \'' + str(exception) + '\'')
         else:
             receivedMessages.put(received, block=False)
-            misc.log('Received the following Message: \''+ str(received.content) + '\' of type \'' + str(received.type) + '\'')
+            misc.log('Received the following Message: \''+ str(received.getContent()) + '\' of type \'' + str(received.type) + '\'')
                 
 def addListningDaemon(*args):
     global receivedMessages
@@ -95,8 +98,8 @@ def getMessageofType(type, waitForMessage=True):
     except Empty:
         return None
     else:
-        misc.log('Retreived Message: \'' + str(msg.content) + '\' of type \'' + str(msg.type) + '\'')
-        return msg.content
+        misc.log('Retreived Message: \'' + str(msg.getContent()) + '\' of type \'' + str(msg.type) + '\'')
+        return msg.getContent()
         
 def messageInBuffer(type=None):
     global receivedMessages
@@ -105,7 +108,7 @@ def messageInBuffer(type=None):
 def sendMessage(type, content, socketObj):
     msg = msgClass(type, content)
     socketObj.send(pickle.dumps(msg))
-    misc.log('Sent the following Message: \''+ str(msg.content) + '\' of type \'' + str(msg.type) + '\'')
+    misc.log('Sent the following Message: \''+ str(content) + '\' of type \'' + str(msg.type) + '\'')
     sleep(0.005) #allow time for the message to be processed before sending another message
     
 def addUsedType(type):
