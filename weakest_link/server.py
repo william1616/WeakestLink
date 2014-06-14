@@ -305,7 +305,7 @@ class questionControl(threading.Thread):
             askQuestion(self.gameController.round, self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
             
             sendClientEvent('responseWait', [None])
-            while True:
+            while not self.end:
                 receivedCommand = network.getMessageofType('quResponse', False)
                 if receivedCommand and receivedCommand > 0 and receivedCommand <= 4:
                     if questionHandler(receivedCommand, question, awnser, self.gameController) == True:
@@ -327,10 +327,10 @@ class questionControl(threading.Thread):
                         
         if not self.end:
             self.questionGenerator = createQuestionGenerator(self.finalQ)
-            while True:
+            while not self.end:
                 question, awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
                 askFinalQuestion(self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
-                while True:
+                while not self.end:
                     sendClientEvent('responseWait', [None])
                     receivedCommand = network.getMessageofType('quResponse')
                     if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 2:
@@ -341,6 +341,14 @@ class questionControl(threading.Thread):
                     self.gameController.winner()
                     self.end = True
                     break
+                    
+        if not self.end:
+            pass
+            #maybe do something at the end of the program - data collection? restart?
+            
+    def join(self):
+        self.end = True
+        super().join()
 
 def start():
     global listner, questionThread
@@ -468,7 +476,6 @@ def selectFinalQuestionFile():
 def close(topLevel):
     listner.stopListner(True)
     if 'questionThread' in globals():
-        questionThread.newQuestion = questionThread.end = True
         questionThread.join()
     if topLevel.config()['class'][4] == 'Toplevel': topLevel.root.deiconify()
     topLevel.destroy()
