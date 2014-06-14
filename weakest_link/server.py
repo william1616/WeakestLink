@@ -8,45 +8,23 @@ import csv, threading, time, sys, os.path
 path = os.path.dirname(__file__)
 try:
     import network, misc
+    from sharedClasses import contestantClass
+    
 except ImportError:
     import importlib.machinery
     loader = importlib.machinery.SourceFileLoader("network", os.path.join(path, "network.py"))
     network = loader.load_module("network")
     loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
     misc = loader.load_module("misc")
+    loader = importlib.machinery.SourceFileLoader("sharedClasses", os.path.join(path, "sharedClasses.py"))
+    contestantClass = loader.load_module("sharedClasses").contestantClass
     
 status = []
 socketList = []
 
 def contestantGenerator():
     for i in range(0, config['questions']['contestantCnt']):
-        yield contestantClass(str(i))
-        
-class contestantClass():
-    def __init__(self, name):
-        self.name = name
-        self.score = 0
-        self.totalScore = 0
-        self.finalScore = [None] * int(config['questions']['finalRndQCnt'] / 2)
-        
-    def incScore(self, ammount=1):
-        self.score += ammount
-        self.totalScore += ammount
-        
-    def correctFinalQu(self, questionNo):
-        self.incScore()
-        if questionNo <= config['questions']['finalRndQCnt']:
-            self.finalScore[floor((questionNo - 1) / 2)] = True
-        
-    def incorrectFinalQu(self, questionNo):
-        if questionNo <= config['questions']['finalRndQCnt']:
-            self.finalScore[floor((questionNo - 1) / 2)] = False
-        
-    def clrScore(self):
-        self.score = 0
-        
-    def finalQuestionsCorrect(self):
-        return self.finalScore.count(True)
+        yield contestantClass('Contestant' + str(i))
         
 class roundControllerClass():
     def __init__(self):
@@ -54,14 +32,14 @@ class roundControllerClass():
         self.moneyCounter = 0
         self.correct = 0
         self.rQuestions = 1
-    
+        
     def getCurMoney(self):
         return self.money[self.moneyCounter]
         
     def testAllCorrect(self):
         return len(self.money) - 1 == self.moneyCounter
         
-class gameControllerClass()
+class gameControllerClass():
     def __init__(self):
         self.bank = 0
         self.round = 0
@@ -73,6 +51,7 @@ class gameControllerClass()
         self.roundControllers = {}
         for i in range(1, self.contestantCnt + 1):
             self.roundControllers[i] = roundControllerClass()
+        self.crtContestantIndex = -1
         self.nextRound()
             
     def getCurRndCtrl(self):
@@ -84,12 +63,12 @@ class gameControllerClass()
     def nextRound(self):
         self.round += 1
         self.getCurRndCtrl()
-        for i in contestants:
+        for i in self.contestants:
             i.clrScore()
         sendClientEvent('contestantUpdate', self.contestants)
         self.nextContestant()
-        if checkFinalRound():
-            self.nextFinal()
+        if self.checkFinalRound():
+            self.startFinal()
         else:
             statusUpdate('Round ' + str(self.round) + ' starting')
             sendClientEvent('rndStart', [self.round])
@@ -99,21 +78,23 @@ class gameControllerClass()
         statusUpdate('You must now choose the Weakest Link')
         i = 1
         while i - 1 < len(self.contestants):
-            statusUpdate(str(i) + '\t' + self.contestants[i-1] + '\t' + self.contestants[i-1])
+            statusUpdate(str(i) + '\t' + self.contestants[i-1].name + '\t' + str(self.contestants[i-1].score))
             i += 1
+        sendClientEvent('contestantUpdate', self.contestants)
         sendClientEvent('eliminationWait', [None])
+        self.bankMoney()
         while True:
-            index = network.getMessageofType('removeContestant', socketList)
+            index = network.getMessageofType('removeContestant')
             if isinstance(index, int) and index >= 0 and index < len(self.contestants):
                 eliminated = self.contestants[index]
                 statusUpdate(eliminated.name + ' you are the Weakest Link! Goodbye')
                 self.removedContestants.append(self.contestants.pop(index))
                 sendClientEvent('contestantEliminated', [eliminated])
-                time.sleep(1)
+                #time.sleep(1)
                 break
         
     def nextContestant(self):
-        self.crtContestantIndex, nxtContestantIndex = cycleContestants(crtContestant, len(self.contestants))
+        self.crtContestantIndex, nxtContestantIndex = cycleContestants(self.crtContestantIndex, len(self.contestants))
         self.curContestant = self.contestants[self.crtContestantIndex]
         self.nxtContestant = self.contestants[nxtContestantIndex]
     
@@ -122,29 +103,29 @@ class gameControllerClass()
         self.curRndCtrl.correct += 1
         self.curRndCtrl.moneyCounter += 1
         self.curContestant.incScore()
-        if self.curRndCtrl.testAllCorrect:
+        if self.curRndCtrl.testAllCorrect():
             self.allCorrect()
         else:
             self.ans()
         sendClientEvent('correctAns', [awnser])
-        time.sleep(1)
+        #time.sleep(1)
         
     def incorrectAns(self, awnser):
         statusUpdate('Incorrect - ' + awnser)
         self.curRndCtrl.moneyCounter = 0
         self.ans()
         sendClientEvent('incorrectAns', [awnser])
-        time.sleep(1)
+        #time.sleep(1)
         
     def ans(self):
         self.curRndCtrl.rQuestions += 1
         self.nextContestant()
-        sendClientEvent('contestantUpdate', [self.contestants])
+        sendClientEvent('contestantUpdate', self.contestants)
         sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
-        statusUpdate('You now have £' + self.curRndCtrl.getCurMoney())
+        statusUpdate('You now have £' + str(self.curRndCtrl.getCurMoney()))
         
-    def bank(self):
-        statusUpdate('Banked £' + str(change))
+    def bankMoney(self):
+        statusUpdate('Banked £' + str(self.curRndCtrl.getCurMoney()))
         statusUpdate('£' + str(self.bank) + ' now in bank')
         statusUpdate('You now have £0')
         self.bank += self.curRndCtrl.getCurMoney()
@@ -155,7 +136,7 @@ class gameControllerClass()
         statusUpdate('Time Up')
         statusUpdate('You have £' + str(self.bank) + ' in the bank')
         sendClientEvent('timeUp', [None])
-        time.sleep(1)
+        #time.sleep(1)
         self.weakestLink()
         self.nextRound()
     
@@ -164,18 +145,18 @@ class gameControllerClass()
         statusUpdate('You have £' + str(self.bank) + ' in the bank')
         sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
         sendClientEvent('allCorrect', [None])
-        time.sleep(1)
+        #time.sleep(1)
         self.weakestLink()
         self.nextRound()
         
     def checkFinalRound(self):
-        return len(self.contestants) == 2:
+        return len(self.contestants) == 2
         
-    def nextFinal(self):
+    def startFinal(self):
         statusUpdate('Final Round starting')
         sendClientEvent('finalStart', [None])
         
-    def finalCorrect(self):
+    def finalCorrect(self, awnser):
         statusUpdate('Correct - ' + awnser)
         self.curRndCtrl.correct += 1
         self.curContestant.correctFinalQu(self.curRndCtrl.rQuestions)
@@ -183,15 +164,15 @@ class gameControllerClass()
         time.sleep(1)
         self.finalAns()
         
-    def finalIncorrect(self):
+    def finalIncorrect(self, awnser):
         statusUpdate('Incorrect - ' + awnser)
         sendClientEvent('finalIncorrectAns', [awnser])
         time.sleep(1)
         #if head2head remove the first incorect awnsering contestant
         if self.curRndCtrl.rQuestions > config['questions']['finalRndQCnt']:
+            statusUpdate(self.contestants[self.crtContestantIndex].name + ' you are the Weakest Link! Goodbye')
+            sendClientEvent('contestantEliminated', [self.contestants[self.crtContestantIndex]])
             self.removedContestants.append(self.contestants.pop(self.crtContestantIndex))
-            statusUpdate(self.crtContestant.name + ' you are the Weakest Link! Goodbye')
-            sendClientEvent('contestantEliminated', [self.crtContestant])
             time.sleep(1)
         else: #otherwise mark the question as incorectly awnsered
             self.curContestant.incorrectFinalQu(self.curRndCtrl.rQuestions)
@@ -200,7 +181,7 @@ class gameControllerClass()
     def finalAns(self):
         self.curRndCtrl.rQuestions += 1
         self.nextContestant()
-        sendClientEvent('contestantUpdate', [self.contestants])
+        sendClientEvent('contestantUpdate', self.contestants)
         
     def detFinalEnd(self):
         i = topScore = 0
@@ -216,12 +197,13 @@ class gameControllerClass()
             sendClientEvent('headStart', [None])
             time.sleep(1)
         else:
-            for contestant in self.contestants:
-                if contestant.score != topScore:
-                    statusUpdate(contestant.name + ' you are the Weakest Link! Goodbye')
-                    sendClientEvent('contestantEliminated', [contestant])
-                    self.removedContestants.append(self.contestants.pop(key))
+            for i in range(0, len(self.contestants)):
+                if self.contestants[i].score != topScore:
+                    statusUpdate(self.contestants[i].name + ' you are the Weakest Link! Goodbye')
+                    sendClientEvent('contestantEliminated', [self.contestants[i]])
+                    self.removedContestants.append(self.contestants.pop(i))
                     time.sleep(1)
+                    break
                     
     def isWinner(self):
         return len(self.contestants) == 1
@@ -232,7 +214,7 @@ class gameControllerClass()
         
 def questionGenerator(questions, start=0):
     questionCnt = len(questions)
-    for i in range(start, questionCnt - 1)
+    for i in range(start, questionCnt - 1):
         yield questions[i][0], questions[i][1], questions[i + 1][0], questions[i + 1][1]
     yield questions[questionCnt - 1][0], questions[questionCnt - 1][1], None, None #if there is only a single question left the next question can't be returned
         
@@ -263,7 +245,7 @@ def createQuestionGenerator(path, round=None):
         
 class serverListner (threading.Thread):
     def __init__(self):
-        threading.Thread.__init__(self)
+        super().__init__()
         self.running = self.end = False
     def run(self):
         global socketList
@@ -302,56 +284,57 @@ class serverListner (threading.Thread):
 
 class questionControl(threading.Thread):
     def __init__(self):
-        threading.Thread.__init__(self)
-        self.newQuestion = False
+        super().__init__()
         self.end = False
         self.mainQ = os.path.join(path, "..\\", config['questions']['mainQ'])
         self.finalQ = os.path.join(path, "..\\", config['questions']['finalQ'])
     def run(self):
         global socketList
         self.gameController = gameControllerClass()
-        while not self.end or self.gameController.checkFinalRound():
+        while not self.end and not self.gameController.checkFinalRound():
             if self.gameController.getRQuestionNo() == 1 and config['questions']['sortQuestions'] == True: #if it is a new round create the question generator for that round
-                self.questionGenerator = createQuestionGenerator(mainQ, gameController.round)
+                self.questionGenerator = createQuestionGenerator(self.mainQ, gameController.round)
             if not hasattr(self, 'questionGenerator'):
-                self.questionGenerator = createQuestionGenerator(mainQ)
+                self.questionGenerator = createQuestionGenerator(self.mainQ)
             
             question, awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
-            askQuestion(self.gameController.curContestant.name, question, awnser, self.gameController.round, self.getRQuestionNo(), self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
+            askQuestion(self.gameController.round, self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
             
-            self.newQuestion = False
             sendClientEvent('responseWait', [None])
-            while not self.newQuestion:
-                receivedCommand = network.getMessageofType('quResponse', socketList, False)
-                if receivedCommand and receivedCommand > 0 and receivedCommand <= 4 and questionHandler(receivedCommand, question, awnser, self.gameController) == True:
-                    break
+            while True:
+                receivedCommand = network.getMessageofType('quResponse', False)
+                if receivedCommand and receivedCommand > 0 and receivedCommand <= 4:
+                    if questionHandler(receivedCommand, question, awnser, self.gameController) == True:
+                        break
+                    else:
+                        sendClientEvent('responseWait', [None])
                     
                 #goto question
-                questionNo = network.getMessageofType('gotoQu', socketList, False)
+                questionNo = network.getMessageofType('gotoQu', False)
                 if questionNo and questionNo > 0 and questionNo <= len(questions):
                     self.questionGenerator = createQuestionGenerator(mainQ, questionNo)
                     break
                     
                 #server acts as a relay for prompt message
-                promptMessage = network.getMessageofType('promtMsg', socketList, False)
+                promptMessage = network.getMessageofType('promtMsg', False)
                 if promptMessage:
                     for socketObj in socketList:
                         network.sendMessage('promtMsg', promptMessage, socketObj)
                         
         if not self.end:
-            self.questionGenerator = createQuestionGenerator(finalQ)
+            self.questionGenerator = createQuestionGenerator(self.finalQ)
             while True:
                 question, awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
-                askFinalQuestion(self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
-                sendClientEvent('responseWait', [None])
+                askFinalQuestion(self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
                 while True:
-                    receivedCommand = network.getMessageofType('quResponse', socketList)
+                    sendClientEvent('responseWait', [None])
+                    receivedCommand = network.getMessageofType('quResponse')
                     if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 2:
                         finalQuestionHandler(receivedCommand, question, awnser, self.gameController)
                         break
                         
-                if gameController.isWinner()
-                    gameController.winner()
+                if self.gameController.isWinner():
+                    self.gameController.winner()
                     self.end = True
                     break
 
@@ -424,7 +407,7 @@ def initTk(parent):
     contestantTopLevel.bind("<Return>", lambda event: updateContestants())
     contestantTopLevel.bind("<Escape>", lambda event: contestantTopLevel.withdraw())
     
-    ttk.Button(contestantTopLevel, text='Update', command=updateContestants).grid(column=0, row=8, sticky=N)
+    #ttk.Button(contestantTopLevel, text='Update', command=updateContestants).grid(column=0, row=8, sticky=N)
     ttk.Button(contestantTopLevel, text='Cancel', command=contestantTopLevel.withdraw).grid(column=1, row=8, sticky=N)
     
     parent.protocol("WM_DELETE_WINDOW", lambda: close(parent))
@@ -513,12 +496,12 @@ def cycleContestants(curContestantIndex, totalContestants):
         
     return curContestantIndex, nxtContestantIndex
     
-def askQuestion(curContestant, question, awnser, roundNo, rQuestionNo, nxtContestant, nxtQuestion, nxtAwnser):
+def askQuestion(roundNo, rQuestionNo, curContestant, question, awnser, nxtContestant, nxtQuestion, nxtAwnser):
     statusUpdate('Round ' + str(roundNo) + ' Question ' + str(rQuestionNo))
     statusUpdate(curContestant + ': ' + question)
     sendClientEvent('askQuestion', [rQuestionNo, curContestant, question, awnser])
     sendClientEvent('nxtQuestion', [rQuestionNo + 1, nxtContestant, nxtQuestion, nxtAwnser])
-
+    
 def questionHandler(event, question, awnser, gameController):
     global socketList
     if event == 1:
@@ -526,26 +509,26 @@ def questionHandler(event, question, awnser, gameController):
     elif event == 2:
         gameController.incorrectAns(awnser)
     elif event == 3:
-        gameController.bank()
+        gameController.bankMoney()
         return False
     elif event == 4:
         gameController.timeUp()
     event = ''
     return True    
     
-def askFinalQuestion(curContestant, question, awnser, nxtContestant, nxtQuestion, nxtAwnser):
-    statusUpdate('Final Question ' + str(question))
+def askFinalQuestion(rQuestionNo, curContestant, question, awnser, nxtContestant, nxtQuestion, nxtAwnser):
+    statusUpdate('Final Question ' + str(rQuestionNo) + ': ' + str(question))
     statusUpdate(curContestant + ': ' + question)
-    sendClientEvent('askFinalQuestion', [curContestant, question, awnser])
-    sendClientEvent('nxtFinalQuestion', [nxtContestant, nxtQuestion, nxtAwnser])
+    sendClientEvent('askFinalQuestion', [rQuestionNo, curContestant, question, awnser])
+    sendClientEvent('nxtFinalQuestion', [rQuestionNo + 1, nxtContestant, nxtQuestion, nxtAwnser])
     
 def finalQuestionHandler(event, question, awnser, gameController):
     global socketList
     if event == 1:
-        gameController.finalCorrect()
+        gameController.finalCorrect(awnser)
     elif event == 2:
-        gameController.finalIncorrect()
-    if gameController.getRQuestionNo() == config['questions']['finalRndQCnt']: #if all final questions have been asked determine the winner or go head2head
+        gameController.finalIncorrect(awnser)
+    if gameController.getRQuestionNo() == config['questions']['finalRndQCnt'] + 1: #if all final questions have been asked determine the winner or go head2head
         gameController.detFinalEnd()
 
 def importQuestions(file):
@@ -568,17 +551,14 @@ def importQuestions(file):
     
 def sendClientEvent(event, args):
     global socketList
-    try:
-        misc.log('Update Client')
-    except:
-        print('Update Client')
     for socketObj in socketList:
         network.sendMessage(event, args, socketObj)
 
 def netTypesDeclaration():
-    network.addUsedType('cmd')
+    network.addUsedType('quResponse')
     network.addUsedType('gotoQu')
-    network.addUsedType('pmsg')
+    network.addUsedType('promtMsg')
+    network.addUsedType('removeContestant')
         
 def setup():
     global config
@@ -586,7 +566,6 @@ def setup():
     config = misc.initConfig()
     print('Config Imported')
     netTypesDeclaration()
-    varDeclaration()
         
 if __name__ == '__main__':
     setup()

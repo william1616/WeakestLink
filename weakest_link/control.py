@@ -5,6 +5,7 @@ import time, math, os.path
 path = os.path.dirname(__file__)
 try:
     import network, misc
+    from sharedClasses import contestantClass
 except ImportError:
     import importlib.machinery
     loader = importlib.machinery.SourceFileLoader("network", os.path.join(path, "network.py"))
@@ -20,15 +21,25 @@ def start():
     if network.attemptConnect(socket, address.get(), config['server']['bindPort']):
         startFrame.grid_forget()
         waitFrame.grid()
+        network.addUsedType('gameStart')
         isServerRunning()
     else:
         messagebox.showerror("Error", "Could not find server \"" + address.get() + "\"")
 
 def isServerRunning():
     global socket, startTopLevel, mainTopLevel, running
-    
-    variables = network.getMessageofType('variables', [socket], False)
-    if variables and variables['gamemode'] != -1: #if no longer listning for conections
+    if network.getMessageofType('gameStart', False): #if no longer listning for conections
+        network.addUsedType('rndStart')
+        network.addUsedType('askQuestion')
+        network.addUsedType('responseWait')
+        network.addUsedType('rndScoreUpdate')
+        network.addUsedType('contestantUpdate')
+        network.addUsedType('eliminationWait')
+        network.addUsedType('finalStart')
+        network.addUsedType('askFinalQuestion')
+        network.addUsedType('headStart')
+        network.addUsedType('winner')
+        network.removeUsedType('gameStart')
         variableUpdates()
         startTopLevel.withdraw()
         mainTopLevel.deiconify()
@@ -41,27 +52,32 @@ def isServerRunning():
 
 def removeContestant(contestantIndex):
     global voteFrame, mainFrame, socket
+    disableButton()
     voteTopLevel.withdraw()
     mainTopLevel.deiconify()
-    sendCommand(contestantIndex)
+    network.sendMessage('removeContestant', contestantIndex, socket)
     
-def sendCommand(cmd):
+def sendQuestionResponse(response):
     global socket
     disableButton()
-    network.sendMessage('cmd', cmd, socket)
+    network.sendMessage('quResponse', response, socket)
     
 def enableButton():
     global mainButton
+    misc.log('enable button')
     for key, value in mainButton.items():
+        misc.log('enabled ' + key)
         value.config(state='normal')
         
 def disableButton():
     global mainButton
+    misc.log('disable button')
     for key, value in mainButton.items():
+        misc.log('disabled ' + key)
         value.config(state='disabled')
         
 def initTk(parent):
-    global address, question, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainButton, finalTopLevel, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
+    global address, mainQuestion, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainButton, finalTopLevel, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
 
     mainTopLevel = parent
     parent.title(config['Tk']['window_title'])
@@ -106,13 +122,13 @@ def initTk(parent):
     mainFrame.columnconfigure(0, weight=1)
     mainFrame.rowconfigure(0, weight=1)
 
-    question = StringVar()
+    mainQuestion = StringVar()
     status = StringVar()
     cur_money = IntVar()
     bank = IntVar()
 
     ttk.Label(mainFrame, textvariable=status, width=100, background='red').grid(column=1, row=1, sticky=N)
-    ttk.Label(mainFrame, textvariable=question, width=100).grid(column=1, row=2, sticky=N)
+    ttk.Label(mainFrame, textvariable=mainQuestion, width=100).grid(column=1, row=2, sticky=N)
     ttk.Label(mainFrame, text='Money: ').grid(column=4, row=1, sticky=N)
     ttk.Label(mainFrame, text='Bank: ').grid(column=4, row=2, sticky=N)
     ttk.Label(mainFrame, textvariable=cur_money).grid(column=5, row=1, sticky=N)
@@ -120,13 +136,13 @@ def initTk(parent):
     
     mainButton = {}
     
-    mainButton['correct'] = ttk.Button(mainFrame, text="Correct", command=lambda: sendCommand(1))
+    mainButton['correct'] = ttk.Button(mainFrame, text="Correct", command=lambda: sendQuestionResponse(1))
     mainButton['correct'].grid(column=2, row=1, sticky=N)
-    mainButton['incorrect'] = ttk.Button(mainFrame, text="Incorrect", command=lambda: sendCommand(2))
+    mainButton['incorrect'] = ttk.Button(mainFrame, text="Incorrect", command=lambda: sendQuestionResponse(2))
     mainButton['incorrect'].grid(column=2, row=2, sticky=N)
-    mainButton['bank'] = ttk.Button(mainFrame, text="Bank", command=lambda: sendCommand(3))
+    mainButton['bank'] = ttk.Button(mainFrame, text="Bank", command=lambda: sendQuestionResponse(3))
     mainButton['bank'].grid(column=3, row=2, sticky=N)
-    mainButton['time'] = ttk.Button(mainFrame, text="Time Up", command=lambda: sendCommand(4))
+    mainButton['time'] = ttk.Button(mainFrame, text="Time Up", command=lambda: sendQuestionResponse(4))
     mainButton['time'].grid(column=3, row=1, sticky=N)
     
     mainMenu = Menu(mainTopLevel)
@@ -164,9 +180,9 @@ def initTk(parent):
     ttk.Label(finalTopLevel, textvariable=finalScore1).grid(column=6, row=1, sticky=N)
     ttk.Label(finalTopLevel, textvariable=finalScore2).grid(column=6, row=2, sticky=N)
     
-    mainButton['finalCorrect'] = ttk.Button(finalTopLevel, text="Correct", command=lambda: sendCommand(1))
+    mainButton['finalCorrect'] = ttk.Button(finalTopLevel, text="Correct", command=lambda: sendQuestionResponse(1))
     mainButton['finalCorrect'].grid(column=2, row=1, sticky=N)
-    mainButton['finalIncorrect'] = ttk.Button(finalTopLevel, text="Incorrect", command=lambda: sendCommand(2))
+    mainButton['finalIncorrect'] = ttk.Button(finalTopLevel, text="Incorrect", command=lambda: sendQuestionResponse(2))
     mainButton['finalIncorrect'].grid(column=2, row=2, sticky=N)
     
     voteTopLevel = Toplevel(parent)
@@ -204,7 +220,7 @@ def initTk(parent):
 def promptMessage():
     global socket
     message = simpledialog.askstring("Send Message to Prompt", "Message:")
-    network.sendMessage('pmsg', message, socket)
+    network.sendMessage('promptMsg', message, socket)
     
 def gotoQuestion():
     global socket, running
@@ -238,75 +254,83 @@ def close():
     mainTopLevel.destroy()
     
 def variableUpdates():
-    global question, status, cur_money, bank, startTopLevel, mainTopLevel, voteTopLevel
+    global mainQuestion, status, cur_money, bank, round, contestantList, startTopLevel, mainTopLevel, voteTopLevel, voteVar
     
-    variables = network.getMessageofType('variables', [socket], False)
-    #only do any processing if variables have been updated
-    if variables:
-        disableButton()
-        if len(variables['contestants']) == 1:
-            finalStatus.set(str(list(variables['contestants'])[0]) + ' is the winner!')
-            finalQuestion.set('')
-        elif variables['gamemode'] == 0:
-            voteTopLevel.withdraw()
-            if len(variables['contestants']) == 2:
-                mainTopLevel.withdraw()
-                finalStatus.set('Final Round starting')
-                finalTopLevel.deiconify()
-            else:
-                status.set('Round ' + str(variables['cntRounds']) + ' starting')
-                mainTopLevel.deiconify()
-        elif variables['gamemode'] == 1:
-            voteTopLevel.withdraw()
-            status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
-            question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
-            cur_money.set(list(variables['money'])[variables['correct']])
-            bank.set(variables['bank'])
-            mainTopLevel.deiconify()
-            enableButton()
-        elif variables['gamemode'] == 2:
-            mainTopLevel.withdraw()
-            contestantList = list(variables['contestants'].keys())
-            for i in range(0, 8):
-                try:
-                    voteVar[i].set(contestantList[i])
-                except IndexError:
-                    voteButton[i].grid_forget()
-            voteTopLevel.deiconify()
-        elif variables['gamemode'] == 4:
-            voteTopLevel.withdraw()
-            finalStatus.set('Final Question ' + str(variables['cntRquestions']))
-            finalQuestion.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
-            if finalName1.get() == '':
-                finalName1.set(list(variables['contestants'].keys())[0])
-                finalName2.set(list(variables['contestants'].keys())[1])
-            finalScore1.set(list(variables['contestants'].values())[0])
-            finalScore2.set(list(variables['contestants'].values())[1])
-            finalTopLevel.deiconify()
-            enableButton()
-        elif variables['gamemode'] == 5:
-            finalStatus.set('Going to Head to Head Round')
-            finalQuestion.set('')
-    
+    if network.messageInBuffer('rndStart'):
+        [round] = network.getMessageofType('rndStart', False)
+        voteTopLevel.withdraw()
+        status.set('Round ' + str(round) + ' starting')
+        mainTopLevel.deiconify()
+        
+    if network.messageInBuffer('askQuestion'):
+        rQuestion, contestant, question, awnser = network.getMessageofType('askQuestion', False)
+        voteTopLevel.withdraw()
+        status.set('Round ' + str(round) + ' Question ' + str(rQuestion))
+        mainQuestion.set(contestant + ': ' + question)
+        mainTopLevel.deiconify()
+        
+    if network.getMessageofType('responseWait', False):
+        enableButton()
+        
+    if network.messageInBuffer('rndScoreUpdate'):
+        moneyCount, money, bankVal = network.getMessageofType('rndScoreUpdate', False)
+        cur_money.set(money[moneyCount])
+        bank.set(bankVal)
+        
+    if network.messageInBuffer('contestantUpdate'):
+        contestantList = network.getMessageofType('contestantUpdate', False)
+        
+    if network.getMessageofType('eliminationWait', False):
+        mainTopLevel.withdraw()
+        for i in range(0, 8):
+            try:
+                voteVar[i].set(contestantList[i].name)
+            except IndexError:
+                voteButton[i].grid_forget()
+        voteTopLevel.deiconify()
+        
+    if network.getMessageofType('finalStart', False):
+        voteTopLevel.withdraw()
+        mainTopLevel.withdraw()
+        finalStatus.set('Final Round starting')
+        finalTopLevel.deiconify()
+        
+    if network.messageInBuffer('askFinalQuestion'):
+        rQuestion, contestant, question, awnser = network.getMessageofType('askFinalQuestion', False)
+        voteTopLevel.withdraw()
+        finalStatus.set('Final Question ' + str(rQuestion))
+        finalQuestion.set(contestant + ': ' + question)
+        if finalName1.get() == '':
+            finalName1.set(contestantList[0].name)
+            finalName2.set(contestantList[1].name)
+        finalScore1.set(contestantList[0].score)
+        finalScore2.set(contestantList[1].score)
+        finalTopLevel.deiconify()
+        
+    if network.getMessageofType('headStart', False):
+        finalStatus.set('Going to Head to Head Round')
+        finalQuestion.set('')
+        
+    if network.messageInBuffer('winner'):
+        [winner] = network.getMessageofType('winner', False)
+        finalStatus.set(winner.name + ' is the winner!')
+        finalQuestion.set('')
+        
     try:
         #run this function again in 1000ms
         if mainTopLevel.config()['class'][4] == 'Tk':
-            mainTopLevel.after(1000, variableUpdates)
+            mainTopLevel.after(100, variableUpdates)
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
-            mainTopLevel.root.after(1000, variableUpdates)
+            mainTopLevel.root.after(100, variableUpdates)
     except TclError:
         #dont call the function again
         pass
-        
-def netTypesDeclaration():
-    network.addUsedType('variables')
 
 def setup():
     global config
     print('Importing Config...')
     config = misc.initConfig()
     print('Config Imported')
-    netTypesDeclaration()
 
 if __name__ == '__main__':
     setup()
