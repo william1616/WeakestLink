@@ -53,6 +53,10 @@ class gameControllerClass():
             self.roundControllers[i] = roundControllerClass()
         self.crtContestantIndex = -1
         self.nextRound()
+        
+        # init ClienSide Variables
+        sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
+        sendClientEvent('contestantUpdate', self.contestants)
             
     def getCurRndCtrl(self):
         self.curRndCtrl = self.roundControllers[self.round]
@@ -90,7 +94,7 @@ class gameControllerClass():
                 statusUpdate(eliminated.name + ' you are the Weakest Link! Goodbye')
                 self.removedContestants.append(self.contestants.pop(index))
                 sendClientEvent('contestantEliminated', [eliminated])
-                #time.sleep(1)
+                time.sleep(1)
                 break
         
     def nextContestant(self):
@@ -104,18 +108,20 @@ class gameControllerClass():
         self.curRndCtrl.moneyCounter += 1
         self.curContestant.incScore()
         if self.curRndCtrl.testAllCorrect():
+            sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
+            time.sleep(1) # allow client display time to udpsdate before moving to elimination
             self.allCorrect()
         else:
             self.ans()
         sendClientEvent('correctAns', [awnser])
-        #time.sleep(1)
+        time.sleep(1)
         
     def incorrectAns(self, awnser):
         statusUpdate('Incorrect - ' + awnser)
         self.curRndCtrl.moneyCounter = 0
         self.ans()
         sendClientEvent('incorrectAns', [awnser])
-        #time.sleep(1)
+        time.sleep(1)
         
     def ans(self):
         self.curRndCtrl.rQuestions += 1
@@ -136,7 +142,7 @@ class gameControllerClass():
         statusUpdate('Time Up')
         statusUpdate('You have £' + str(self.bank) + ' in the bank')
         sendClientEvent('timeUp', [None])
-        #time.sleep(1)
+        time.sleep(1)
         self.weakestLink()
         self.nextRound()
     
@@ -145,7 +151,7 @@ class gameControllerClass():
         statusUpdate('You have £' + str(self.bank) + ' in the bank')
         sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
         sendClientEvent('allCorrect', [None])
-        #time.sleep(1)
+        time.sleep(1)
         self.weakestLink()
         self.nextRound()
         
@@ -161,13 +167,11 @@ class gameControllerClass():
         self.curRndCtrl.correct += 1
         self.curContestant.correctFinalQu(self.curRndCtrl.rQuestions)
         sendClientEvent('finalCorrectAns', [awnser])
-        time.sleep(1)
         self.finalAns()
         
     def finalIncorrect(self, awnser):
         statusUpdate('Incorrect - ' + awnser)
         sendClientEvent('finalIncorrectAns', [awnser])
-        time.sleep(1)
         #if head2head remove the first incorect awnsering contestant
         if self.curRndCtrl.rQuestions > config['questions']['finalRndQCnt']:
             statusUpdate(self.contestants[self.crtContestantIndex].name + ' you are the Weakest Link! Goodbye')
