@@ -40,8 +40,9 @@ class messageQueue(Queue): #prevent unused types from being returned/queued
                         return item
                     else:
                         self.put(item)
-                        misc.log('Putting Item \'' + str(item.type) + '\' into Stack')
+                        misc.log('Putting Item \'' + str(item.type) + '\' back into Stack')
                 else: #if the item is not put back in the queue decrease the number of that type in the queue
+                    misc.log('Removing Item \'' + str(item.type) + '\' from Stack as type not in usedTypes List')
                     self.types[item.type] -= 1
             raise Empty()
         except KeyError:
