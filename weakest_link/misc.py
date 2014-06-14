@@ -1,11 +1,11 @@
 from datetime import datetime
 from json import load, dump
-import os.path
-import __main__, threading
+from traceback import extract_stack
+import __main__, os.path, threading
 
 class threadFunc(threading.Thread):
     def __init__(self, function): #use lambda to pass args
-        theading.Thread.__init__()
+        super().__init__()
         self.function = function
         self.end = False
     def run(self):
@@ -47,7 +47,7 @@ def writeConfig(config, fileName=os.path.join(os.path.dirname(__file__), '..\\co
 config = initConfig()
 
 def log(text, forceLog=False, fileName=os.path.join(os.path.dirname(__file__), '..//', config['debug']['fileName'])):
-    logName = os.path.basename(__file__)
+    logName = extract_stack()[0][0]
     if config['debug']['log'] or forceLog:
         with open(fileName, 'a') as file:
             file.write(str(datetime.now()) + ' [' + logName + '] ' + text + '\n')
