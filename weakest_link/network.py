@@ -103,8 +103,8 @@ def getMessageofType(type, waitForMessage=True):
         return msg.getContent()
         
 def messageInBuffer(type=None):
-    global receivedMessages
-    return (not type and not receivedMessages.empty() or type in receivedMessages.types and receivedMessages.types[type] > 0)
+    global receivedMessages, usedTypes
+    return (not type and not receivedMessages.empty() or type in receivedMessages.types and receivedMessages.types[type] > 0 and type in usedTypes)
     
 def sendMessage(type, content, socketObj):
     msg = msgClass(type, content)
