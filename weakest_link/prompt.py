@@ -13,34 +13,62 @@ except ImportError:
     misc = loader.load_module("misc")
 
 def variableUpdates():
-    global status, question, awnser, nextQuestion, nextAwnser, contestants, message
+    global status, question, awnser, nextQuestion, nextAwnser, contestants, message, round, contestantList
     
-    variables = network.getMessageofType('variables', [socket], False)
-    #only do any processing if variables have been updated
-    if variables:
-        if len(variables['contestants']) == 1:
-            status.set(str(list(variables['contestants'])[0]) + ' is the winner!')
-        elif variables['gamemode'] == 0:
-            if len(variables['contestants']) == 2:
-                status.set('Final Round starting')
-            else:
-                status.set('Round ' + str(variables['cntRounds']) + ' starting')
-        elif variables['gamemode'] == 1 or variables['gamemode'] == 4:
-            if variables['gamemode'] == 1:
-                status.set('Round ' + str(variables['cntRounds']) + ' Question ' + str(variables['cntRquestions']))
-            else:
-                status.set('Final Question ' + str(variables['cntRquestions']))
-            question.set(list(variables['contestants'].keys())[variables['crtContestant']] + ': ' + variables['question'])
-            nextQuestion.set(list(variables['contestants'].keys())[variables['nxtContestant']] + ': ' + variables['nxtQuestion'])
-            awnser.set(variables['awnser'])
-            nextAwnser.set(variables['nxtAwnser'])
-            contestants.set('\n'.join([str([f, j]) for f, j in zip(variables['contestants'].keys(), variables['contestants'].values())]).replace('\'','').replace('[','').replace(']','').replace(',',':'))
-        elif variables['gamemode'] == 5:
-            status.set('Going to Head to Head Round')
+    if network.messageInBuffer('rndStart'):
+        [round] = network.getMessageofType('rndStart', False)
+        status.set('Round ' + str(round) + ' starting')
+        
+    if network.messageInBuffer('askQuestion'):
+        rQuestion, contestant, questionStr, awnserStr = network.getMessageofType('askQuestion', False)
+        question.set(contestant + ': ' + questionStr)
+        awnser.set(awnserStr)
+        status.set('Round ' + str(round) + ' Question ' + str(rQuestion))
+        
+    if network.messageInBuffer('nxtQuestion'):
+        nxtRQuestion, nxtContestant, nxtQuestionStr, nxtAwnserStr = network.getMessageofType('nxtQuestion', False)
+        nextQuestion.set(nxtContestant + ': ' + nxtQuestionStr)
+        nextAwnser.set(nxtAwnserStr)
+        
+    if network.messageInBuffer('rndScoreUpdate'):
+        moneyCount, money, bankVal = network.getMessageofType('rndScoreUpdate', False)
+        
+    if network.messageInBuffer('contestantUpdate'):
+        contestantList = network.getMessageofType('contestantUpdate', False)
+        contestants.set('\n'.join([': '.join([contestant.name, str(contestant.score)]) for contestant in contestantList]))
+        
+    # if network.getMessageofType('eliminationWait', False):
+        # mainTopLevel.withdraw()
+        # for i in range(0, 8):
+            # try:
+                # voteVar[i].set(contestantList[i].name)
+            # except IndexError:
+                # voteButton[i].grid_forget()
+        # voteTopLevel.deiconify()
+        
+    if network.getMessageofType('finalStart', False):
+        status.set('Final Round starting')
+        
+    if network.messageInBuffer('askFinalQuestion'):
+        rQuestion, contestant, question, awnser = network.getMessageofType('askFinalQuestion', False)
+        question.set(contestant + ': ' + question)
+        awnser.set(awnser)
+        status.set('Final Question ' + str(rQuestion))
+        
+    if network.messageInBuffer('nxtFinalQuestion'):
+        nxtRQuestion, nxtContestant, nxtQuestion, nxtAwnser = network.getMessageofType('nxtFinalQuestion', False)
+        nextQuestion.set(nxtContestant + ': ' + nxtQuestion)
+        nextAwnser.set(nxtAwnser)
+        
+    if network.getMessageofType('headStart', False):
+        status.set('Going to Head to Head Round')
+        
+    if network.messageInBuffer('winner'):
+        [winner] = network.getMessageofType('winner', False)
+        status.set(winner + ' is the winner!')
             
-    recvMessage = network.getMessageofType('pmsg', [socket], False)
-    if recvMessage:
-        message.set(recvMessage)
+    if network.messageInBuffer('promtMsg'):
+        message.set(network.getMessageofType('promtMsg', False))
     
     try:
         #run this function again in 1000ms
@@ -57,20 +85,30 @@ def start():
     if network.attemptConnect(socket, address.get(), config['server']['bindPort']):
         startFrame.grid_forget()
         waitFrame.grid()
+        network.addUsedType('gameStart')
         isServerRunning()
     else:
         messagebox.showerror("Error", "Could not find server \"" + address.get() + "\"")
             
 def isServerRunning():
-    global mainTopLevel, socket
-    
-    variables = network.getMessageofType('variables', [socket], False)
-    if variables and variables['gamemode'] != -1: #if no longer listing for conections
+    global mainTopLevel
+    if network.getMessageofType('gameStart', False): #if no longer listning for conections
+        network.addUsedType('rndStart')
+        network.addUsedType('askQuestion')
+        network.addUsedType('nxtQuestion')
+        network.addUsedType('rndScoreUpdate')
+        network.addUsedType('contestantUpdate')
+        network.addUsedType('finalStart')
+        network.addUsedType('askFinalQuestion')
+        network.addUsedType('nxtFinalQuestion')
+        network.addUsedType('headStart')
+        network.addUsedType('winner')
+        network.addUsedType('promtMsg')
+        network.removeUsedType('gameStart')
         waitFrame.grid_forget()
         mainFrame.grid()
         variableUpdates()
     else:
-        #run the function every time the system is idle
         if mainTopLevel.config()['class'][4] == 'Tk':
             mainTopLevel.after(100, isServerRunning)
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
@@ -157,22 +195,16 @@ def initTk(parent):
     parent.protocol("WM_DELETE_WINDOW", close)
     
 def close():
-    global mainTopLevel, socket
-    network.closeSocket(socket)
+    global mainTopLevel
     if mainTopLevel.config()['class'][4] == 'Toplevel': mainTopLevel.root.deiconify()
     mainTopLevel.destroy()
-
-def netTypesDeclaration():
-    network.addUsedType('variables')
-    network.addUsedType('pmsg')
     
 def setup():
-    global socket, config
-    socket = network.initClientSocket()
+    global config, socket
     print('Importing Config...')
     config = misc.initConfig()
     print('Config Imported')
-    netTypesDeclaration()
+    socket = network.initClientSocket()
 
 if __name__ == '__main__':
     setup()

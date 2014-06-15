@@ -306,22 +306,25 @@ class questionControl(threading.Thread):
             
             sendClientEvent('responseWait', [None])
             while not self.end:
-                receivedCommand = network.getMessageofType('quResponse', False)
-                if receivedCommand and receivedCommand > 0 and receivedCommand <= 4:
-                    if questionHandler(receivedCommand, question, awnser, self.gameController) == True:
-                        break
-                    else:
-                        sendClientEvent('responseWait', [None])
+                if network.messageInBuffer('quResponse'):
+                    receivedCommand = network.getMessageofType('quResponse', False)
+                    if receivedCommand > 0 and receivedCommand <= 4:
+                        if questionHandler(receivedCommand, question, awnser, self.gameController) == True:
+                            break
+                        else:
+                            sendClientEvent('responseWait', [None])
                     
                 #goto question
-                questionNo = network.getMessageofType('gotoQu', False)
-                if questionNo and questionNo > 0 and questionNo <= len(questions):
-                    self.questionGenerator = createQuestionGenerator(mainQ, questionNo)
-                    break
+                if network.messageInBuffer('gotoQu'):
+                    questionNo = network.getMessageofType('gotoQu', False)
+                    if questionNo > 0 and questionNo <= len(questions):
+                        self.questionGenerator = createQuestionGenerator(mainQ, questionNo)
+                        break
                     
                 #server acts as a relay for prompt message
-                promptMessage = network.getMessageofType('promtMsg', False)
-                if promptMessage:
+                if network.messageInBuffer('promptMsg'):
+                    promptMessage = network.getMessageofType('promptMsg', False)
+                    misc.log('Relaying promptMessage \'' + promptMessage + '\'')
                     for socketObj in socketList:
                         network.sendMessage('promtMsg', promptMessage, socketObj)
                         
@@ -568,7 +571,7 @@ def sendClientEvent(event, args):
 def netTypesDeclaration():
     network.addUsedType('quResponse')
     network.addUsedType('gotoQu')
-    network.addUsedType('promtMsg')
+    network.addUsedType('promptMsg')
     network.addUsedType('removeContestant')
         
 def setup():
