@@ -1,3 +1,3 @@
 @echo off
-python setup.py build
+python setup.py py2exe
 pause

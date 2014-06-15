@@ -1,9 +1,7 @@
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
-from collections import OrderedDict
 from operator import itemgetter
-from math import floor
-import csv, threading, time, sys, os.path
+import csv, threading, time, os.path
 
 path = os.path.dirname(__file__)
 try:

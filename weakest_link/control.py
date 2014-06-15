@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
-import time, math, os.path
+from math import ceil
+import time, os.path
 
 path = os.path.dirname(__file__)
 try:
@@ -201,7 +202,7 @@ def initTk(parent):
     for i in range(0, 8):
         voteVar.append(StringVar())
         voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
-        voteButton[i].grid(column=i % 4, row=math.ceil((1 + i) / 4), sticky=N)
+        voteButton[i].grid(column=i % 4, row=ceil((1 + i) / 4), sticky=N)
         
     waitFrame = ttk.Frame(startTopLevel, padding="3 3 3 3")
     waitFrame.grid(column=0, row=0, sticky=(N, W, E, S))

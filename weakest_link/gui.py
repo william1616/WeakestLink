@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk, messagebox
-import pygame, sys, operator, os.path
+import pygame, operator, os.path
 from pygame.locals import *
 
 path = os.path.dirname(__file__)

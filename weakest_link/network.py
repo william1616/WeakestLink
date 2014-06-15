@@ -1,7 +1,6 @@
 import socket, hashlib, select, os.path, pickle
 from  threading import Thread
 from queue import Queue, Empty
-from collections import OrderedDict
 from time import sleep
 
 path = os.path.dirname(__file__)
