@@ -22,7 +22,7 @@
         "width": 800
     }, 
     "debug": {
-        "fileName": "log.txt", 
+        "fileName": "log.log", 
         "log": false
     }
 }
