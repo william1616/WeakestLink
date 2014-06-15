@@ -38,4 +38,8 @@ nosetests.xml
 *.csv
 
 # Log files
-log*
+*.log
+
+# MS Binary Files
+*.xlsx
+*.docx
