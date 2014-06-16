@@ -289,10 +289,12 @@ def gameLoop():
             moneyCount, money, bankVal = network.getMessageofType('rndScoreUpdate', False)
             if responseWait: updateRndScores(moneyCount, money, bankVal)
             
-        if network.messageInBuffer('correctAns'):
+        if network.getMessageofType('correctAns', False):
+            drawCentreText('Correct')
             responseWait = False
         
-        if network.messageInBuffer('incorrectAns'):
+        if network.getMessageofType('incorrectAns', False):
+            drawCentreText('Incorrect')
             responseWait = False
             
         if network.messageInBuffer('contestantUpdate'):
@@ -319,10 +321,12 @@ def gameLoop():
         if network.getMessageofType('finalStart', False):
             drawFinalStart(contestantList)
             
-        if network.messageInBuffer('finalCorrectAns'):
+        if network.getMessageofType('finalCorrectAns', False):
+            drawCentreText('Correct')
             responseWait = False
         
-        if network.messageInBuffer('finalIncorrectAns'):
+        if network.getMessageofType('finalIncorrectAns', False):
+            drawCentreText('Incorrect')
             responseWait = False
             
         if network.messageInBuffer('askFinalQuestion'):
@@ -359,12 +363,16 @@ def isServerRunning():
     if network.getMessageofType('gameStart', False): #if no longer listning for conections
         network.addUsedType('rndStart')
         network.addUsedType('rndScoreUpdate')
+        network.addUsedType('correctAns')
+        network.addUsedType('incorrectAns')
         network.addUsedType('contestantUpdate')
         network.addUsedType('askQuestion')
         network.addUsedType('allCorrect')
         network.addUsedType('timeUp')
         network.addUsedType('contestantEliminated')
         network.addUsedType('finalStart')
+        network.addUsedType('finalCorrectAns')
+        network.addUsedType('finalIncorrectAns')
         network.addUsedType('askFinalQuestion')
         network.addUsedType('headStart')
         network.addUsedType('winner')

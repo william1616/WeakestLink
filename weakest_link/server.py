@@ -105,21 +105,21 @@ class gameControllerClass():
         self.curRndCtrl.correct += 1
         self.curRndCtrl.moneyCounter += 1
         self.curContestant.incScore()
+        sendClientEvent('correctAns', [awnser])
+        time.sleep(1)
         if self.curRndCtrl.testAllCorrect():
             sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
             time.sleep(1) # allow client display time to udpsdate before moving to elimination
             self.allCorrect()
         else:
             self.ans()
-        sendClientEvent('correctAns', [awnser])
-        time.sleep(1)
         
     def incorrectAns(self, awnser):
         statusUpdate('Incorrect - ' + awnser)
         self.curRndCtrl.moneyCounter = 0
-        self.ans()
         sendClientEvent('incorrectAns', [awnser])
         time.sleep(1)
+        self.ans()
         
     def ans(self):
         self.curRndCtrl.rQuestions += 1
