@@ -33,6 +33,12 @@ def variableUpdates():
     if network.messageInBuffer('rndScoreUpdate'):
         moneyCount, money, bankVal = network.getMessageofType('rndScoreUpdate', False)
         
+    if network.getMessageofType('timeUp', False):
+        messagebox.showinfo('End of Round - Time Up')
+    
+    if network.getMessageofType('allCorrect', False):
+        messagebox.showinfo('End of Round - All Questions Correct')
+        
     if network.messageInBuffer('contestantUpdate'):
         contestantList = network.getMessageofType('contestantUpdate', False)
         contestants.set('\n'.join([': '.join([contestant.name, str(contestant.score)]) for contestant in contestantList]))
@@ -97,6 +103,8 @@ def isServerRunning():
         network.addUsedType('askQuestion')
         network.addUsedType('nxtQuestion')
         network.addUsedType('rndScoreUpdate')
+        network.addUsedType('timeUp')
+        network.addUsedType('allCorrect')
         network.addUsedType('contestantUpdate')
         network.addUsedType('finalStart')
         network.addUsedType('askFinalQuestion')
