@@ -1,28 +1,29 @@
 {
-    "questions": {
-        "finalRndQCnt": 10, 
-        "finalQ": "resources/questions.csv", 
-        "sortQuestions": false, 
-        "mainQ": "resources/questions.csv", 
-        "contestantCnt": 8
-    }, 
-    "server": {
-        "bindAddress": "localhost", 
-        "bindPort": 1024
-    }, 
     "Tk": {
-        "status_lines": 25, 
+        "status_lines": 25,
         "window_title": "The Weakest Link"
-    }, 
+    },
+    "questions": {
+        "finalQ": "resources/questions.csv",
+        "finalRndQCnt": 10,
+        "mainQ": "resources/questions.csv",
+        "sortQuestions": false,
+        "contestantCnt": 8
+    },
     "pygame": {
-        "fps": 10, 
-        "height": 600, 
-        "window_title": "The Weakest Link", 
-        "font": "microsoftsansserif", 
-        "width": 800
-    }, 
+        "height": 600,
+        "fullscreen": false,
+        "width": 800,
+        "window_title": "The Weakest Link",
+        "font": "microsoftsansserif",
+        "fps": 10
+    },
+    "server": {
+        "bindPort": 1024,
+        "bindAddress": "localhost"
+    },
     "debug": {
-        "fileName": "log.log", 
+        "fileName": "log.txt",
         "log": false
     }
 }

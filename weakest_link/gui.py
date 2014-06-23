@@ -23,7 +23,7 @@ def initPygame():
     width = config['pygame']['width']
     height = config['pygame']['height']
 
-    displaySurface = pygame.display.set_mode((width, height), 0)
+    displaySurface = pygame.display.set_mode((width, height), FULLSCREEN if config['pygame']['fullscreen'] == True else 0)
     pygame.display.set_caption(config['pygame']['window_title'])
 
     white = pygame.Color(255, 255, 255)
@@ -279,6 +279,10 @@ def gameLoop():
                 close()
                 end = True
                 break
+            elif event.type == KEYDOWN and event.dict['key'] == 292:
+                pygame.display.set_mode((pygame.display.Info().current_w, pygame.display.Info().current_h), FULLSCREEN)
+            elif event.type == KEYDOWN and event.dict['key'] == 291:
+                pygame.display.set_mode((pygame.display.Info().current_w, pygame.display.Info().current_h), 0)
         if end: break
         
         if network.messageInBuffer('rndStart'):
