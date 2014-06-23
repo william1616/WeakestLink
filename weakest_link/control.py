@@ -163,6 +163,7 @@ def initTk(parent):
     mainHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
     
     finalTopLevel = Toplevel(parent)
+    finalTopLevel['menu'] = mainMenu
     finalTopLevel.title(config['Tk']['window_title'])
     finalTopLevel.resizable(False, False)
     finalTopLevel.withdraw()
