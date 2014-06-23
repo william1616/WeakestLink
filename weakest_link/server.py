@@ -388,7 +388,7 @@ def initTk(parent):
     startTools.add_command(label='Select Main Question File', command=selectMainQuestionFile)
     startTools.add_command(label='Select Final Question File', command=selectFinalQuestionFile)
     #startTools.add_command(label='Goto Question...', command=gotoQuestion)
-    #startTools.add_command(label='Edit Contestant List', command=editContestants)
+    startTools.add_command(label='Edit Contestant List', command=editContestants)
     startTools.add_separator()
     startTools.add_command(label='What is my IP?', command=lambda: messagebox.showinfo("You IP Address is...", "\n".join(network.getIPAddress())))
     
@@ -420,7 +420,7 @@ def initTk(parent):
     contestantTopLevel.bind("<Return>", lambda event: updateContestants())
     contestantTopLevel.bind("<Escape>", lambda event: contestantTopLevel.withdraw())
     
-    #ttk.Button(contestantTopLevel, text='Update', command=updateContestants).grid(column=0, row=8, sticky=N)
+    ttk.Button(contestantTopLevel, text='Update', command=updateContestants).grid(column=0, row=8, sticky=N)
     ttk.Button(contestantTopLevel, text='Cancel', command=contestantTopLevel.withdraw).grid(column=1, row=8, sticky=N)
     
     parent.protocol("WM_DELETE_WINDOW", lambda: close(parent))
@@ -440,25 +440,20 @@ def initTk(parent):
     # else:
         # messagebox.showerror("Error", "Server has not Started Running Yet!")
     
-# def editContestants():
-    # global variables, contestantTopLevel, contestantNameEntry, contestantNameValues
-    # contestantNameEntry = []
-    # contestantNameValues = []
-    # values wasn't working for some reason hence messy hack around
-    # for i, contestant in zip(range(0, len(variables['contestants'])), [contestants for contestants, score in variables['contestants'].items()]):
-        # contestantNameValues.append(StringVar())
-        # contestantNameValues[i].set(contestant)
-        # contestantNameEntry.append(ttk.Entry(contestantTopLevel, textvariable=contestantNameValues[i]))
-        # contestantNameEntry[i].grid(column=0, row=i, columnspan=2, sticky=N)
-    # contestantTopLevel.deiconify()
+def editContestants():
+    global variables, contestantTopLevel, contestantNameValues, questionThread
+    contestantNameValues = []
+    for i, contestant in zip(range(0, len(questionThread.gameController.contestants)), questionThread.gameController.contestants):
+        contestantNameValues.append(StringVar())
+        contestantNameValues[i].set(contestant.name)
+        ttk.Entry(contestantTopLevel, textvariable=contestantNameValues[i]).grid(column=0, row=i, columnspan=2, sticky=N)
+    contestantTopLevel.deiconify()
     
-# def updateContestants():
-    # global variables, contestantTopLevel, contestantNameEntry, contestantNameValues
-    # values wasn't working for some reason hence messy hack around
-    # contestantTopLevel.withdraw()
-    # for contestantEntry, contestantNewName, contestantOldName in zip(contestantNameEntry, contestantNameValues, [contestants for contestants, score in variables['contestants'].items()]):
-        # contestantEntry.grid_forget()
-        # variables['contestants'][contestantNewName.get()] = variables['contestants'].pop(contestantOldName) 
+def updateContestants():
+    global variables, contestantTopLevel, contestantNameEntry, contestantNameValues
+    contestantTopLevel.withdraw()
+    for i, contestantName in zip(range(0, len(questionThread.gameController.contestants)), contestantNameValues):
+        questionThread.gameController.contestants[i].name = contestantName.get()
     
 def selectMainQuestionFile():
     global config
