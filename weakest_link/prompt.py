@@ -34,10 +34,14 @@ def variableUpdates():
         moneyCount, money, bankVal = network.getMessageofType('rndScoreUpdate', False)
         
     if network.getMessageofType('timeUp', False):
-        messagebox.showinfo('End of Round - Time Up')
+        messagebox.showinfo('End of Round', 'Time Up!\nYou must now choose the Weakest Link!')
     
     if network.getMessageofType('allCorrect', False):
-        messagebox.showinfo('End of Round - All Questions Correct')
+        messagebox.showinfo('End of Round', 'All Questions Correct!\nYou must now choose the Weakest Link!')
+        
+    if network.messageInBuffer('contestantEliminated'):
+        [lastEliminated] = network.getMessageofType('contestantEliminated', False)
+        messagebox.showinfo('Contestant Eliminated', lastEliminated.name + ' has been eliminated!')
         
     if network.messageInBuffer('contestantUpdate'):
         contestantList = network.getMessageofType('contestantUpdate', False)
@@ -56,9 +60,9 @@ def variableUpdates():
         status.set('Final Round starting')
         
     if network.messageInBuffer('askFinalQuestion'):
-        rQuestion, contestant, question, awnser = network.getMessageofType('askFinalQuestion', False)
-        question.set(contestant + ': ' + question)
-        awnser.set(awnser)
+        rQuestion, contestant, questionValue, awnserValue = network.getMessageofType('askFinalQuestion', False)
+        question.set(contestant + ': ' + questionValue)
+        awnser.set(awnserValue)
         status.set('Final Question ' + str(rQuestion))
         
     if network.messageInBuffer('nxtFinalQuestion'):
@@ -72,6 +76,7 @@ def variableUpdates():
     if network.messageInBuffer('winner'):
         [winner] = network.getMessageofType('winner', False)
         status.set(winner + ' is the winner!')
+		messagebox.showinfo(winner + ' is the Winner!')
             
     if network.messageInBuffer('promtMsg'):
         message.set(network.getMessageofType('promtMsg', False))
@@ -104,6 +109,7 @@ def isServerRunning():
         network.addUsedType('nxtQuestion')
         network.addUsedType('rndScoreUpdate')
         network.addUsedType('timeUp')
+        network.addUsedType('contestantEliminated')
         network.addUsedType('allCorrect')
         network.addUsedType('contestantUpdate')
         network.addUsedType('finalStart')
