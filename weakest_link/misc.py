@@ -17,7 +17,7 @@ class threadFunc(threading.Thread):
 
 def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json')):
     #options list here needs to be kept up to date with config fields
-    options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "resources/questions.csv", "finalQ": "resources/questions.csv", "finalRndQCnt": 10, "sortQuestions": False, "contestantCnt": 8}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": False}, "pygame": {"font": "microsoftsansserif", "window_title": "The Weakest Link", "fps": 10, "width": 800, "height": 600}}
+    options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "resources/questions.csv", "finalQ": "resources/questions.csv", "finalRndQCnt": 10, "sortQuestions": False, "contestantCnt": 8}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": False}, "pygame": {"font": "microsoftsansserif", "window_title": "The Weakest Link", "fps": 10, "width": 800, "height": 600, "fullscreen": False}}
     with open(fileName, 'r') as configFile:
         try:
             config = load(configFile)
