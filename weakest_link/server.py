@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from operator import itemgetter
-import csv, threading, time, os.path
+import csv, threading, time, os.path, sys
 
 path = os.path.dirname(__file__)
 try:
@@ -94,6 +94,13 @@ class gameControllerClass():
                 sendClientEvent('contestantEliminated', [eliminated])
                 time.sleep(1)
                 break
+                
+                #server acts as a relay for prompt message
+                if network.messageInBuffer('promptMsg'):
+                    promptMessage = network.getMessageofType('promptMsg', False)
+                    misc.log('Relaying promptMessage \'' + promptMessage + '\'')
+                    for socketObj in socketList:
+                        network.sendMessage('promtMsg', promptMessage, socketObj)
         
     def nextContestant(self):
         self.crtContestantIndex, nxtContestantIndex = cycleContestants(self.crtContestantIndex, len(self.contestants))
@@ -295,7 +302,7 @@ class questionControl(threading.Thread):
         self.gameController = gameControllerClass()
         while not self.end and not self.gameController.checkFinalRound():
             if self.gameController.getRQuestionNo() == 1 and config['questions']['sortQuestions'] == True: #if it is a new round create the question generator for that round
-                self.questionGenerator = createQuestionGenerator(self.mainQ, gameController.round)
+                self.questionGenerator = createQuestionGenerator(self.mainQ, self.gameController.round)
             if not hasattr(self, 'questionGenerator'):
                 self.questionGenerator = createQuestionGenerator(self.mainQ)
             
@@ -337,6 +344,20 @@ class questionControl(threading.Thread):
                     if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 2:
                         finalQuestionHandler(receivedCommand, question, awnser, self.gameController)
                         break
+                        
+                #goto question
+                if network.messageInBuffer('gotoQu'):
+                    questionNo = network.getMessageofType('gotoQu', False)
+                    if questionNo > 0 and questionNo <= len(questions):
+                        self.questionGenerator = createQuestionGenerator(mainQ, questionNo)
+                        break
+                    
+                #server acts as a relay for prompt message
+                if network.messageInBuffer('promptMsg'):
+                    promptMessage = network.getMessageofType('promptMsg', False)
+                    misc.log('Relaying promptMessage \'' + promptMessage + '\'')
+                    for socketObj in socketList:
+                        network.sendMessage('promtMsg', promptMessage, socketObj)
                         
                 if self.gameController.isWinner():
                     self.gameController.winner()
@@ -546,12 +567,15 @@ def importQuestions(file):
     with open(file) as csvfile: # add search directory for csv
         questionfile = csv.reader(csvfile)
         for row in questionfile:
-            # where row[0] = questions & row[1] = awnser
-            if row[0] and row[1] and row[2]:
-                questions.append([row[0], row[1], int(row[2])])
-            elif row[0] and row[1]:
-                questions.append([row[0], row[1]])
-            cnt += 1
+            try:
+                # where row[0] = questions & row[1] = awnser
+                if row[0] and row[1] and row[2]:
+                    questions.append([row[0], row[1], int(row[2])])
+                elif row[0] and row[1]:
+                    questions.append([row[0], row[1]])
+                cnt += 1
+            except:
+                misc.log('Error importing question - ' + str(sys.exc_info()))
         statusUpdate('Imported ' + str(cnt) + ' Questions')
         # with statement automatically closes the csv file cleanly even in event of unexpected script termination
         return questions
