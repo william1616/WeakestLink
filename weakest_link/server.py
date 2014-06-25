@@ -84,7 +84,6 @@ class gameControllerClass():
             i += 1
         sendClientEvent('contestantUpdate', self.contestants)
         sendClientEvent('eliminationWait', [None])
-        self.bankMoney()
         while True:
             index = network.getMessageofType('removeContestant')
             if isinstance(index, int) and index >= 0 and index < len(self.contestants):
