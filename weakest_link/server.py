@@ -39,6 +39,7 @@ class roundControllerClass():
         
 class gameControllerClass():
     def __init__(self):
+        self.end = False
         self.bank = 0
         self.round = 0
         self.contestantCnt = config['questions']['contestantCnt']
@@ -84,22 +85,23 @@ class gameControllerClass():
             i += 1
         sendClientEvent('contestantUpdate', self.contestants)
         sendClientEvent('eliminationWait', [None])
-        while True:
-            index = network.getMessageofType('removeContestant')
-            if isinstance(index, int) and index >= 0 and index < len(self.contestants):
-                eliminated = self.contestants[index]
-                statusUpdate(eliminated.name + ' you are the Weakest Link! Goodbye')
-                self.removedContestants.append(self.contestants.pop(index))
-                sendClientEvent('contestantEliminated', [eliminated])
-                time.sleep(1)
-                break
+        while not self.end:
+            if network.messageInBuffer('removeContestant'):
+                index = network.getMessageofType('removeContestant', False)
+                if isinstance(index, int) and index >= 0 and index < len(self.contestants):
+                    eliminated = self.contestants[index]
+                    statusUpdate(eliminated.name + ' you are the Weakest Link! Goodbye')
+                    self.removedContestants.append(self.contestants.pop(index))
+                    sendClientEvent('contestantEliminated', [eliminated])
+                    time.sleep(1)
+                    break
                 
-                #server acts as a relay for prompt message
-                if network.messageInBuffer('promptMsg'):
-                    promptMessage = network.getMessageofType('promptMsg', False)
-                    misc.log('Relaying promptMessage \'' + promptMessage + '\'')
-                    for socketObj in socketList:
-                        network.sendMessage('promtMsg', promptMessage, socketObj)
+            #server acts as a relay for prompt message
+            if network.messageInBuffer('promptMsg'):
+                promptMessage = network.getMessageofType('promptMsg', False)
+                misc.log('Relaying promptMessage \'' + promptMessage + '\'')
+                for socketObj in socketList:
+                    network.sendMessage('promtMsg', promptMessage, socketObj)
         
     def nextContestant(self):
         self.crtContestantIndex, nxtContestantIndex = cycleContestants(self.crtContestantIndex, len(self.contestants))
@@ -369,6 +371,7 @@ class questionControl(threading.Thread):
             
     def join(self):
         self.end = True
+        self.gameController.end = True
         super().join()
 
 def start():

@@ -12,8 +12,25 @@ except ImportError:
     loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
     misc = loader.load_module("misc")
 
+class timedLabel(ttk.Label):
+    #grid on calling
+    def __init__(self, frame, **kwargs):
+        global mainTopLevel
+        kwargs['background'] = 'red'
+        kwargs['font'] = font.Font(family="Arial", size=12)
+        super().__init__(frame, **kwargs)
+        try:
+            #run this function again in 1000ms
+            if mainTopLevel.config()['class'][4] == 'Tk':
+                mainTopLevel.after(5000, self.grid_forget)
+            elif mainTopLevel.config()['class'][4] == 'Toplevel':
+                mainTopLevel.root.after(5000, self.grid_forget)
+        except TclError:
+            #dont call the function again
+            pass
+    
 def variableUpdates():
-    global status, question, awnser, nextQuestion, nextAwnser, contestants, message, round, contestantList
+    global status, question, awnser, nextQuestion, nextAwnser, contestants, round, contestantList, mainFrame
     
     if network.messageInBuffer('rndStart'):
         [round] = network.getMessageofType('rndStart', False)
@@ -34,14 +51,14 @@ def variableUpdates():
         moneyCount, money, bankVal = network.getMessageofType('rndScoreUpdate', False)
         
     if network.getMessageofType('timeUp', False):
-        messagebox.showinfo('End of Round', 'Time Up!\nYou must now choose the Weakest Link!')
+        timedLabel(mainFrame, text='Time Up! - You must now choose the Weakest Link!').grid(column=1, row=5, columnspan=3, sticky=(W, N, S))
     
     if network.getMessageofType('allCorrect', False):
-        messagebox.showinfo('End of Round', 'All Questions Correct!\nYou must now choose the Weakest Link!')
+        timedLabel(mainFrame, text='All Questions Correct! - You must now choose the Weakest Link!').grid(column=1, row=5, columnspan=3, sticky=(W, N, S))
         
     if network.messageInBuffer('contestantEliminated'):
         [lastEliminated] = network.getMessageofType('contestantEliminated', False)
-        messagebox.showinfo('Contestant Eliminated', lastEliminated.name + ' has been eliminated!')
+        timedLabel(mainFrame, text=lastEliminated.name + ' has been eliminated!').grid(column=1, row=5, columnspan=3, sticky=(W, N, S))
         
     if network.messageInBuffer('contestantUpdate'):
         contestantList = network.getMessageofType('contestantUpdate', False)
@@ -75,11 +92,11 @@ def variableUpdates():
         
     if network.messageInBuffer('winner'):
         [winner] = network.getMessageofType('winner', False)
-        status.set(winner + ' is the winner!')
-		messagebox.showinfo(winner + ' is the Winner!')
+        status.set(winner.name + ' is the winner!')
+        timedLabel(mainFrame, text=winner.name + ' is the Winner!').grid(column=1, row=5, columnspan=3, sticky=(W, N, S))
             
     if network.messageInBuffer('promtMsg'):
-        message.set(network.getMessageofType('promtMsg', False))
+        timedLabel(mainFrame, text=network.getMessageofType('promtMsg', False)).grid(column=1, row=4, columnspan=3, sticky=(W, N, S))
     
     try:
         #run this function again in 1000ms
@@ -129,7 +146,7 @@ def isServerRunning():
             mainTopLevel.root.after(100, isServerRunning)
         
 def initTk(parent):
-    global address, startFrame, waitFrame, mainFrame, mainTopLevel, status, question, awnser, nextQuestion, nextAwnser, contestants, message
+    global address, startFrame, waitFrame, mainFrame, mainTopLevel, status, question, awnser, nextQuestion, nextAwnser, contestants
     
     mainTopLevel = parent
     
@@ -179,7 +196,9 @@ def initTk(parent):
     ttk.Label(mainFrame, text="Contestants", font=titleFont).grid(column=3, row=1, sticky=(W, N))
     ttk.Label(mainFrame, textvariable=contestants, font=mainFont).grid(column=3, row=2, rowspan=2, sticky=(W, N))
     ttk.Label(mainFrame, text="Messages", font=titleFont).grid(column=0, row=4, sticky=N)
-    ttk.Label(mainFrame, textvariable=message, font=mainFont, width=columnWidth * 3).grid(column=1, row=4, columnspan=3, sticky=(W, N, S))
+    #timedLabels).grid(column=1, row=4, columnspan=3, sticky=(W, N, S))
+    ttk.Label(mainFrame, text="Game Updates", font=titleFont).grid(column=0, row=5, sticky=N)
+    #timedLabels.grid(column=1, row=5, columnspan=3, sticky=(W, N, S))
     
     mainMenu = Menu(parent)
     parent['menu'] = mainMenu
