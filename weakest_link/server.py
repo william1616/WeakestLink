@@ -22,14 +22,25 @@ socketList = []
 
 def contestantGenerator():
     for i in range(0, config['questions']['contestantCnt']):
-        yield contestantClass('Contestant' + str(i))
-        
-class roundControllerClass():
-    def __init__(self):
+        yield contestantClass('Contestant' + str(i), i)
+                
+class mainRoundControllerClass():
+    def __init__(self, roundCnt):
         self.money = [0, 50,100,200,300,400,500,1000,2500,5000]
         self.moneyCounter = 0
         self.correct = 0
         self.rQuestions = 1
+        self.round = roundCnt
+        self.createQuestionGen()
+        
+    def createQuestionGen(self, questionNo=0): #Create the question generator for the round
+        if config['questions']['sortQuestions'] == True:
+            if os.path.isabs(config['questions']['mainQ']):
+                questionPath = config['questions']['mainQ']
+            else:
+                questionPath = os.path.abspath(os.path.join("..\\", config['questions']['mainQ']))
+            self.questionGenerator, self.questionLen = createQuestionGenerator(questionPath, questionNo, self.round)
+        # if sortQuestions is not True the self.questionGenerator attribute needs to be configured to point to the main questionGenerator
         
     def getCurMoney(self):
         return self.money[self.moneyCounter]
@@ -49,19 +60,50 @@ class gameControllerClass():
             self.contestants.append(contestant)
         self.roundControllers = {}
         for i in range(1, self.contestantCnt + 1):
-            self.roundControllers[i] = roundControllerClass()
+            self.roundControllers[i] = mainRoundControllerClass(i)
         self.crtContestantIndex = -1
+        self.createQuestionGen()
         self.nextRound()
         
         # init ClienSide Variables
         sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
         sendClientEvent('contestantUpdate', self.contestants)
+        
+    def gotoQuestion(self, questionNo):
+        if self.checkFinalRound():
+            self.createFinalQuestionGen(questionNo)
+        else:
+            self.createQuestionGen(questionNo)
+        
+    def createQuestionGen(self, questionNo=0):
+        if config['questions']['sortQuestions'] == False:
+            if os.path.isabs(config['questions']['mainQ']):
+                questionPath = config['questions']['mainQ']
+            else:
+                questionPath = os.path.abspath(os.path.join("..\\", config['questions']['mainQ']))
+            self.questionGenerator, self.questionLen = createQuestionGenerator(questionPath, questionNo)
+        else:
+            self.getCurRndCtrl().createQuestionGen(questionNo)
             
+    def createFinalQuestionGen(self, questionNo=0):
+        if os.path.isabs(config['questions']['finalQ']):
+            questionPath = config['questions']['finalQ']
+        else:
+            questionPath = os.path.abspath(os.path.join("..\\", config['questions']['finalQ']))
+        self.questionGenerator, self.questionLen = createQuestionGenerator(questionPath, questionNo)
+        
     def getCurRndCtrl(self):
         self.curRndCtrl = self.roundControllers[self.roundCnt]
+        return self.curRndCtrl
         
     def getRQuestionNo(self):
         return self.curRndCtrl.rQuestions
+    
+    def getQuestionLen(self):
+        if config['questions']['sortQuestions'] == True:
+            return self.getCurRndCtrl().questionLen
+        else:
+            return self.questionLen
         
     def nextRound(self):
         self.roundCnt += 1
@@ -77,6 +119,44 @@ class gameControllerClass():
             sendClientEvent('rndStart', [self.roundCnt])
         time.sleep(1)
         
+    def askQuestion(self):
+        question, self.awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
+        statusUpdate('Round ' + str(self.roundCnt) + ' Question ' + str(self.getRQuestionNo()))
+        statusUpdate(self.curContestant.name + ': ' + question)
+        sendClientEvent('askQuestion', [self.getRQuestionNo(), self.curContestant.name, question, self.awnser])
+        sendClientEvent('nxtQuestion', [self.getRQuestionNo() + 1, self.nxtContestant.name, nxtQuestion, nxtAwnser])
+        return question, self.awnser, nxtQuestion, nxtAwnser
+        
+    def questionHandler(self, event):
+        global socketList
+        if event == 1:
+            self.correctAns(self.awnser)
+        elif event == 2:
+            self.incorrectAns(self.awnser)
+        elif event == 3:
+            self.bankMoney()
+            return False
+        elif event == 4:
+            self.timeUp()
+        event = ''
+        return True
+        
+    def askFinalQuestion(self):
+        question, self.awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
+        statusUpdate('Final Question ' + str(self.getRQuestionNo()) + ': ' + str(question))
+        statusUpdate(self.curContestant.name + ': ' + question)
+        sendClientEvent('askFinalQuestion', [self.getRQuestionNo(), self.curContestant.name, question, self.awnser])
+        sendClientEvent('nxtFinalQuestion', [self.getRQuestionNo() + 1, self.nxtContestant.name, nxtQuestion, nxtAwnser])
+        return question, self.awnser, nxtQuestion, nxtAwnser
+        
+    def finalQuestionHandler(self, event):
+        if event == 1:
+            self.finalCorrect(self.awnser)
+        elif event == 2:
+            self.finalIncorrect(self.awnser)
+        if self.getRQuestionNo() == config['questions']['finalRndQCnt'] + 1: #if all final questions have been asked determine the winner or go head2head
+            self.detFinalEnd()
+        
     def weakestLink(self):    
         statusUpdate('You must now choose the Weakest Link')
         i = 1
@@ -87,14 +167,13 @@ class gameControllerClass():
         sendClientEvent('eliminationWait', [None])
         while not self.end:
             if network.messageInBuffer('removeContestant'):
-                index = network.getMessageofType('removeContestant', False)
-                if isinstance(index, int) and index >= 0 and index < len(self.contestants):
-                    eliminated = self.contestants[index]
-                    statusUpdate(eliminated.name + ' you are the Weakest Link! Goodbye')
-                    self.removedContestants.append(self.contestants.pop(index))
-                    sendClientEvent('contestantEliminated', [eliminated])
-                    time.sleep(1)
-                    break
+                index = [contestant.uuid for contestant in self.contestants].index(network.getMessageofType('removeContestant', False))
+                eliminated = self.contestants[index]
+                statusUpdate(eliminated.name + ' you are the Weakest Link! Goodbye')
+                self.removedContestants.append(self.contestants.pop(index))
+                sendClientEvent('contestantEliminated', [eliminated])
+                time.sleep(1)
+                break
                 
             #server acts as a relay for prompt message
             if network.messageInBuffer('promptMsg'):
@@ -162,10 +241,11 @@ class gameControllerClass():
         self.nextRound()
         
     def checkFinalRound(self):
-        return len(self.contestants) == 2
+        return len(self.contestants) <= 2
         
     def startFinal(self):
         statusUpdate('Final Round starting')
+        self.createFinalQuestionGen()
         sendClientEvent('finalStart', [None])
         
     def finalCorrect(self, awnser):
@@ -178,13 +258,13 @@ class gameControllerClass():
     def finalIncorrect(self, awnser):
         statusUpdate('Incorrect - ' + awnser)
         sendClientEvent('finalIncorrectAns', [awnser])
-        #if head2head remove the first incorect awnsering contestant
+        #if head2head remove the first incorrect awnsering contestant
         if self.curRndCtrl.rQuestions > config['questions']['finalRndQCnt']:
             statusUpdate(self.contestants[self.crtContestantIndex].name + ' you are the Weakest Link! Goodbye')
             sendClientEvent('contestantEliminated', [self.contestants[self.crtContestantIndex]])
             self.removedContestants.append(self.contestants.pop(self.crtContestantIndex))
             time.sleep(1)
-        else: #otherwise mark the question as incorectly awnsered
+        else: #otherwise mark the question as incorrectly awnsered
             self.curContestant.incorrectFinalQu(self.curRndCtrl.rQuestions)
             self.finalAns() #and go to the next question
     
@@ -298,83 +378,67 @@ class questionControl(threading.Thread):
     def __init__(self):
         super().__init__()
         self.end = False
-        self.mainQ = os.path.join(path, "..\\", config['questions']['mainQ'])
-        self.finalQ = os.path.join(path, "..\\", config['questions']['finalQ'])
+        
     def run(self):
-        global socketList
         self.gameController = gameControllerClass()
         while not self.end and not self.gameController.checkFinalRound():
-            if self.gameController.getRQuestionNo() == 1 and config['questions']['sortQuestions'] == True: #if it is a new round create the question generator for that round
-                self.questionGenerator, self.questionLen = createQuestionGenerator(self.mainQ, 0, self.gameController.roundCnt)
-            if not hasattr(self, 'questionGenerator'):
-                self.questionGenerator, self.questionLen = createQuestionGenerator(self.mainQ)
+            self.mainLoop()
             
-            question, awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
-            askQuestion(self.gameController.roundCnt, self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
+        while not self.end:
+            self.finalLoop()
+            if self.gameController.isWinner():
+                self.gameController.winner()
+                break
             
-            sendClientEvent('responseWait', [None])
-            while not self.end:
-                if network.messageInBuffer('quResponse'):
-                    receivedCommand = network.getMessageofType('quResponse', False)
-                    if receivedCommand > 0 and receivedCommand <= 4:
-                        if questionHandler(receivedCommand, question, awnser, self.gameController) == True:
-                            break
-                        else:
-                            sendClientEvent('responseWait', [None])
-                    
-                #goto question
-                if network.messageInBuffer('gotoQu'):
-                    questionNo = network.getMessageofType('gotoQu', False)
-                    if questionNo > 0 and questionNo <= self.questionLen:
-                        if config['questions']['sortQuestions'] == True:
-                            self.questionGenerator, self.questionLen = createQuestionGenerator(self.mainQ, questionNo, self.gameController.roundCnt)
-                        else:
-                            self.questionGenerator, self.questionLen = createQuestionGenerator(self.mainQ, questionNo)
-                        break
-                    
-                #server acts as a relay for prompt message
-                if network.messageInBuffer('promptMsg'):
-                    promptMessage = network.getMessageofType('promptMsg', False)
-                    misc.log('Relaying promptMessage \'' + promptMessage + '\'')
-                    for socketObj in socketList:
-                        network.sendMessage('promtMsg', promptMessage, socketObj)
-                        
-        if not self.end:
-            self.questionGenerator, self.questionLen = createQuestionGenerator(self.finalQ)
-            while not self.end:
-                question, awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
-                askFinalQuestion(self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
-                sendClientEvent('responseWait', [None])
-                while not self.end:
-                    if network.messageInBuffer('quResponse'):
-                        receivedCommand = network.getMessageofType('quResponse', False)
-                        if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 2:
-                            finalQuestionHandler(receivedCommand, question, awnser, self.gameController)
-                            break
-                            
-                    #goto question
-                    if network.messageInBuffer('gotoQu'):
-                        questionNo = network.getMessageofType('gotoQu', False)
-                        if questionNo > 0 and questionNo <= self.questionLen:
-                            self.questionGenerator, self.questionLen = createQuestionGenerator(self.finalQ, questionNo)
-                            break
-                        
-                    #server acts as a relay for prompt message
-                    if network.messageInBuffer('promptMsg'):
-                        promptMessage = network.getMessageofType('promptMsg', False)
-                        misc.log('Relaying promptMessage \'' + promptMessage + '\'')
-                        for socketObj in socketList:
-                            network.sendMessage('promtMsg', promptMessage, socketObj)
-                            
-                    if self.gameController.isWinner():
-                        self.gameController.winner()
-                        self.end = True
-                        break
-                        
         if not self.end:
             pass
-            #maybe do something at the end of the program - data collection? restart?
+            #do something at the end of the program?
+        
+    def mainLoop(self):
+        self.gameController.askQuestion()
+        sendClientEvent('responseWait', [None])
+        while not self.end:
+            if network.messageInBuffer('quResponse'):
+                quResponse = network.getMessageofType('quResponse', False)
+                if quResponse > 0 and quResponse <= 4:
+                    if self.gameController.questionHandler(quResponse) == True:
+                        break
+                    else:
+                        sendClientEvent('responseWait', [None])
             
+            self.checkPromptMsg()
+            if self.checkGotoQuMsg(): break
+            
+    def finalLoop(self):
+        self.gameController.askFinalQuestion()
+        sendClientEvent('responseWait', [None])
+        while not self.end:
+            if network.messageInBuffer('quResponse'):
+                quResponse = network.getMessageofType('quResponse', False)
+                if quResponse > 0 and quResponse <= 2:
+                    self.gameController.finalQuestionHandler(quResponse)
+                    break
+            
+            self.checkPromptMsg()
+            if self.checkGotoQuMsg(): break
+            
+    def checkPromptMsg(self):
+        #server acts as a relay for prompt message
+        if network.messageInBuffer('promptMsg'):
+            promptMessage = network.getMessageofType('promptMsg', False)
+            misc.log('Relaying promptMessage \'' + promptMessage + '\'')
+            for socketObj in socketList:
+                network.sendMessage('promtMsg', promptMessage, socketObj)
+    
+    def checkGotoQuMsg(self):
+        #goto question
+        if network.messageInBuffer('gotoQu'):
+            questionNo = network.getMessageofType('gotoQu', False)
+            if questionNo > 0 and questionNo <= self.gameController.getQuestionLen():
+                self.gameController.gotoQuestion(questionNo)
+                return True
+        return False
+        
     def join(self):
         self.end = True
         self.gameController.end = True
@@ -531,41 +595,6 @@ def cycleContestants(curContestantIndex, totalContestants):
         nxtContestantIndex = 0
         
     return curContestantIndex, nxtContestantIndex
-    
-def askQuestion(roundNo, rQuestionNo, curContestant, question, awnser, nxtContestant, nxtQuestion, nxtAwnser):
-    statusUpdate('Round ' + str(roundNo) + ' Question ' + str(rQuestionNo))
-    statusUpdate(curContestant + ': ' + question)
-    sendClientEvent('askQuestion', [rQuestionNo, curContestant, question, awnser])
-    sendClientEvent('nxtQuestion', [rQuestionNo + 1, nxtContestant, nxtQuestion, nxtAwnser])
-    
-def questionHandler(event, question, awnser, gameController):
-    global socketList
-    if event == 1:
-        gameController.correctAns(awnser)
-    elif event == 2:
-        gameController.incorrectAns(awnser)
-    elif event == 3:
-        gameController.bankMoney()
-        return False
-    elif event == 4:
-        gameController.timeUp()
-    event = ''
-    return True    
-    
-def askFinalQuestion(rQuestionNo, curContestant, question, awnser, nxtContestant, nxtQuestion, nxtAwnser):
-    statusUpdate('Final Question ' + str(rQuestionNo) + ': ' + str(question))
-    statusUpdate(curContestant + ': ' + question)
-    sendClientEvent('askFinalQuestion', [rQuestionNo, curContestant, question, awnser])
-    sendClientEvent('nxtFinalQuestion', [rQuestionNo + 1, nxtContestant, nxtQuestion, nxtAwnser])
-    
-def finalQuestionHandler(event, question, awnser, gameController):
-    global socketList
-    if event == 1:
-        gameController.finalCorrect(awnser)
-    elif event == 2:
-        gameController.finalIncorrect(awnser)
-    if gameController.getRQuestionNo() == config['questions']['finalRndQCnt'] + 1: #if all final questions have been asked determine the winner or go head2head
-        gameController.detFinalEnd()
 
 def importQuestions(file):
     global status

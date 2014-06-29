@@ -25,25 +25,31 @@ class messageQueue(Queue): #prevent unused types from being returned/queued
         else: #otherwise just increment it
             self.types[item.type] += 1
 
-    def get(self, type, block=True, timeout=None):
+    def get(self, type=None, block=True, timeout=None):
         global usedTypes
         try:
-            while block or self.types[type] > 0:
+            if type: 
+                while block or self.types[type] > 0:
+                    item = super().get(block, timeout)
+                    misc.log('Got item \'' + str(item.type) + '\' from Stack')
+                    self.task_done()
+                    if item.type in usedTypes:
+                        self.types[item.type] -= 1 #decrease the number of that type in the queue
+                        if item.type == type: #put the item back if its a usedType but not of the type specified
+                            misc.log('Stack Size: ' + str(self.qsize()))
+                            return item
+                        else:
+                            self.put(item)
+                            misc.log('Putting Item \'' + str(item.type) + '\' back into Stack')
+                    else: #if the item is not put back in the queue decrease the number of that type in the queue
+                        misc.log('Removing Item \'' + str(item.type) + '\' from Stack as type not in usedTypes List')
+                        self.types[item.type] -= 1
+                raise Empty()
+            else:
                 item = super().get(block, timeout)
                 misc.log('Got item \'' + str(item.type) + '\' from Stack')
                 self.task_done()
-                if item.type in usedTypes:
-                    self.types[item.type] -= 1 #decrease the number of that type in the queue
-                    if item.type == type: #put the item back if its a usedType but not of the type specified
-                        misc.log('Stack Size: ' + str(self.qsize()))
-                        return item
-                    else:
-                        self.put(item)
-                        misc.log('Putting Item \'' + str(item.type) + '\' back into Stack')
-                else: #if the item is not put back in the queue decrease the number of that type in the queue
-                    misc.log('Removing Item \'' + str(item.type) + '\' from Stack as type not in usedTypes List')
-                    self.types[item.type] -= 1
-            raise Empty()
+                return item
         except KeyError:
             raise Empty()
 
@@ -91,7 +97,7 @@ def addListningDaemon(*args):
         listner.setDaemon(True)
         listner.start()
     
-def getMessageofType(type, waitForMessage=True):
+def getMessageofType(type=None, waitForMessage=True):
     global receivedMessages
     try:
         msg = receivedMessages.get(type, waitForMessage)

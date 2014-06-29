@@ -51,12 +51,15 @@ def isServerRunning():
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
             mainTopLevel.root.after(100, isServerRunning)
 
-def removeContestant(contestantIndex):
-    global voteFrame, mainFrame, socket, voteTopLevel
+def toggleContestant(contestantClass):
+    global socket, voteTopLevel
     disableButton()
-    voteTopLevel.withdraw()
-    mainTopLevel.deiconify()
-    network.sendMessage('removeContestant', contestantIndex, socket)
+    if contestantClass.uuid in [contestant.uuid for contestant in contestantList]:
+        if messagebox.askokcancel("Confirm", "Remove " + contestantClass.name + " from the Game?", parent=voteTopLevel):
+            network.sendMessage("removeContestant", contestantClass.uuid, socket)
+    else:
+        if messagebox.askokcancel("Confirm", "Re-add " + contestantClass.name + " to the Game?", parent=voteTopLevel):
+            network.sendMessage("addContestant", contestantClass.uuid, socket)
     
 def sendQuestionResponse(response):
     global socket
@@ -78,7 +81,7 @@ def disableButton():
         value.config(state='disabled')
         
 def initTk(parent):
-    global address, mainQuestion, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainFrame, finalFrame, mainButton, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
+    global address, mainQuestion, status, cur_money, bank, voteVar, voteButton, voteScore, voteLabel, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainFrame, finalFrame, mainButton, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
 
     mainTopLevel = parent
     parent.title(config['Tk']['window_title'])
@@ -190,20 +193,28 @@ def initTk(parent):
     voteTopLevel = Toplevel(parent)
     voteTopLevel.title(config['Tk']['window_title'])
     voteTopLevel.resizable(False, False)
-    voteTopLevel.withdraw()
     
     voteFrame = ttk.Frame(voteTopLevel, padding="3 3 3 3")
     voteFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     voteFrame.columnconfigure(0, weight=1)
     voteFrame.rowconfigure(0, weight=1)
     
+    ttk.Label(voteFrame, text="Contestants").grid(column=0, row=0)
+    ttk.Label(voteFrame, text="Score").grid(column=1, row=0)
+    
     voteVar = []
     voteButton = []
+    voteScore = []
+    voteLabel = []
     
     for i in range(0, 8):
         voteVar.append(StringVar())
-        voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i], command=lambda index=i: removeContestant(index)))
-        voteButton[i].grid(column=i % 4, row=ceil((1 + i) / 4), sticky=N)
+        voteScore.append(IntVar())
+        voteLabel.append(ttk.Label(voteFrame, textvariable=voteScore[i]))
+        voteLabel[i].grid(column=1, row=i+1, sticky=N)
+        voteButton.append(ttk.Button(voteFrame, textvariable=voteVar[i]))
+        voteButton[i].grid(column=0, row=i+1, sticky=N)
+        voteButton[i].config(state='disabled')
         
     waitFrame = ttk.Frame(startTopLevel, padding="3 3 3 3")
     waitFrame.grid(column=0, row=0, sticky=(N, W, E, S))
@@ -255,20 +266,16 @@ def close():
     mainTopLevel.destroy()
     
 def variableUpdates():
-    global mainQuestion, status, cur_money, bank, round, contestantList, startTopLevel, mainFrame, finalFrame, voteTopLevel, voteVar
+    global mainQuestion, status, cur_money, bank, round, contestantList, mainTopLevel, startTopLevel, mainFrame, finalFrame, voteVar, voteScore, voteButton, voteLabel
     
     if network.messageInBuffer('rndStart'):
         [round] = network.getMessageofType('rndStart', False)
-        voteTopLevel.withdraw()
         status.set('Round ' + str(round) + ' starting')
-        mainTopLevel.deiconify()
         
     if network.messageInBuffer('askQuestion'):
         rQuestion, contestant, question, awnser = network.getMessageofType('askQuestion', False)
-        voteTopLevel.withdraw()
         status.set('Round ' + str(round) + ' Question ' + str(rQuestion))
         mainQuestion.set(contestant + ': ' + question)
-        mainTopLevel.deiconify()
         
     if network.getMessageofType('responseWait', False):
         enableButton()
@@ -280,25 +287,26 @@ def variableUpdates():
         
     if network.messageInBuffer('contestantUpdate'):
         contestantList = network.getMessageofType('contestantUpdate', False)
-        
-    if network.getMessageofType('eliminationWait', False):
-        mainTopLevel.withdraw()
         for i in range(0, 8):
             try:
                 voteVar[i].set(contestantList[i].name)
+                voteScore[i].set(contestantList[i].score)
+                voteButton[i].config(command=lambda contestantClass=contestantList[i]: toggleContestant(contestantClass))
             except IndexError:
                 voteButton[i].grid_forget()
-        voteTopLevel.deiconify()
+                voteLabel[i].grid_forget()
+        
+    if network.getMessageofType('eliminationWait', False):
+        for i in range(0, 8):
+            voteButton[i].config(state='normal')
         
     if network.getMessageofType('finalStart', False):
-        voteTopLevel.withdraw()
         mainFrame.grid_remove()
         finalStatus.set('Final Round starting')
         finalFrame.grid()
         
     if network.messageInBuffer('askFinalQuestion'):
         rQuestion, contestant, question, awnser = network.getMessageofType('askFinalQuestion', False)
-        voteTopLevel.withdraw()
         finalStatus.set('Final Question ' + str(rQuestion))
         finalQuestion.set(contestant + ': ' + question)
         if finalName1.get() == '':

@@ -13,8 +13,9 @@ except ImportError:
 config = misc.initConfig()
 
 class contestantClass():
-    def __init__(self, name):
+    def __init__(self, name, uuid):
         self.name = name
+        self.uuid = uuid
         self.score = 0
         self.totalScore = 0
         self.finalScore = [None] * int(config['questions']['finalRndQCnt'] / 2)
