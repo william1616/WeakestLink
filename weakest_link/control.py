@@ -52,7 +52,7 @@ def isServerRunning():
             mainTopLevel.root.after(100, isServerRunning)
 
 def removeContestant(contestantIndex):
-    global voteFrame, mainFrame, socket
+    global voteFrame, mainFrame, socket, voteTopLevel
     disableButton()
     voteTopLevel.withdraw()
     mainTopLevel.deiconify()
@@ -78,7 +78,7 @@ def disableButton():
         value.config(state='disabled')
         
 def initTk(parent):
-    global address, mainQuestion, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainButton, finalTopLevel, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
+    global address, mainQuestion, status, cur_money, bank, voteVar, voteButton, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainFrame, finalFrame, mainButton, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
 
     mainTopLevel = parent
     parent.title(config['Tk']['window_title'])
@@ -162,11 +162,11 @@ def initTk(parent):
     
     mainHelp.add_command(label='About', command=lambda: messagebox.showinfo("About Weakest Link", "Remember to write some stuff here\nhttps://github.com/william1616/WeakestLink"))
     
-    finalTopLevel = Toplevel(parent)
-    finalTopLevel['menu'] = mainMenu
-    finalTopLevel.title(config['Tk']['window_title'])
-    finalTopLevel.resizable(False, False)
-    finalTopLevel.withdraw()
+    finalFrame = ttk.Frame(parent, padding="3 3 3 3")
+    finalFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    finalFrame.columnconfigure(0, weight=1)
+    finalFrame.rowconfigure(0, weight=1)
+    finalFrame.grid_remove()
 
     finalQuestion = StringVar()
     finalStatus = StringVar()
@@ -175,16 +175,16 @@ def initTk(parent):
     finalScore1 = IntVar()
     finalScore2 = IntVar()
 
-    ttk.Label(finalTopLevel, textvariable=finalStatus, width=100, background='red').grid(column=1, row=1, sticky=N)
-    ttk.Label(finalTopLevel, textvariable=finalQuestion, width=100).grid(column=1, row=2, sticky=N)
-    ttk.Label(finalTopLevel, textvariable=finalName1).grid(column=5, row=1, sticky=N)
-    ttk.Label(finalTopLevel, textvariable=finalName2).grid(column=5, row=2, sticky=N)
-    ttk.Label(finalTopLevel, textvariable=finalScore1).grid(column=6, row=1, sticky=N)
-    ttk.Label(finalTopLevel, textvariable=finalScore2).grid(column=6, row=2, sticky=N)
+    ttk.Label(finalFrame, textvariable=finalStatus, width=100, background='red').grid(column=1, row=1, sticky=N)
+    ttk.Label(finalFrame, textvariable=finalQuestion, width=100).grid(column=1, row=2, sticky=N)
+    ttk.Label(finalFrame, textvariable=finalName1).grid(column=5, row=1, sticky=N)
+    ttk.Label(finalFrame, textvariable=finalName2).grid(column=5, row=2, sticky=N)
+    ttk.Label(finalFrame, textvariable=finalScore1).grid(column=6, row=1, sticky=N)
+    ttk.Label(finalFrame, textvariable=finalScore2).grid(column=6, row=2, sticky=N)
     
-    mainButton['finalCorrect'] = ttk.Button(finalTopLevel, text="Correct", command=lambda: sendQuestionResponse(1))
+    mainButton['finalCorrect'] = ttk.Button(finalFrame, text="Correct", command=lambda: sendQuestionResponse(1))
     mainButton['finalCorrect'].grid(column=2, row=1, sticky=N)
-    mainButton['finalIncorrect'] = ttk.Button(finalTopLevel, text="Incorrect", command=lambda: sendQuestionResponse(2))
+    mainButton['finalIncorrect'] = ttk.Button(finalFrame, text="Incorrect", command=lambda: sendQuestionResponse(2))
     mainButton['finalIncorrect'].grid(column=2, row=2, sticky=N)
     
     voteTopLevel = Toplevel(parent)
@@ -250,13 +250,12 @@ def close():
     global mainTopLevel, startTopLevel, voteTopLevel
     startTopLevel.destroy()
     voteTopLevel.destroy()
-    finalTopLevel.destroy()
     if mainTopLevel.config()['class'][4] == 'Toplevel': 
         mainTopLevel.root.deiconify()
     mainTopLevel.destroy()
     
 def variableUpdates():
-    global mainQuestion, status, cur_money, bank, round, contestantList, startTopLevel, mainTopLevel, voteTopLevel, voteVar
+    global mainQuestion, status, cur_money, bank, round, contestantList, startTopLevel, mainFrame, finalFrame, voteTopLevel, voteVar
     
     if network.messageInBuffer('rndStart'):
         [round] = network.getMessageofType('rndStart', False)
@@ -293,9 +292,9 @@ def variableUpdates():
         
     if network.getMessageofType('finalStart', False):
         voteTopLevel.withdraw()
-        mainTopLevel.withdraw()
+        mainFrame.grid_remove()
         finalStatus.set('Final Round starting')
-        finalTopLevel.deiconify()
+        finalFrame.grid()
         
     if network.messageInBuffer('askFinalQuestion'):
         rQuestion, contestant, question, awnser = network.getMessageofType('askFinalQuestion', False)
@@ -307,7 +306,6 @@ def variableUpdates():
             finalName2.set(contestantList[1].name)
         finalScore1.set(contestantList[0].score)
         finalScore2.set(contestantList[1].score)
-        finalTopLevel.deiconify()
         
     if network.getMessageofType('headStart', False):
         finalStatus.set('Going to Head to Head Round')

@@ -41,7 +41,7 @@ class gameControllerClass():
     def __init__(self):
         self.end = False
         self.bank = 0
-        self.round = 0
+        self.roundCnt = 0
         self.contestantCnt = config['questions']['contestantCnt']
         self.contestants = []
         self.removedContestants = []
@@ -58,13 +58,13 @@ class gameControllerClass():
         sendClientEvent('contestantUpdate', self.contestants)
             
     def getCurRndCtrl(self):
-        self.curRndCtrl = self.roundControllers[self.round]
+        self.curRndCtrl = self.roundControllers[self.roundCnt]
         
     def getRQuestionNo(self):
         return self.curRndCtrl.rQuestions
         
     def nextRound(self):
-        self.round += 1
+        self.roundCnt += 1
         self.getCurRndCtrl()
         for i in self.contestants:
             i.clrScore()
@@ -73,8 +73,8 @@ class gameControllerClass():
         if self.checkFinalRound():
             self.startFinal()
         else:
-            statusUpdate('Round ' + str(self.round) + ' starting')
-            sendClientEvent('rndStart', [self.round])
+            statusUpdate('Round ' + str(self.roundCnt) + ' starting')
+            sendClientEvent('rndStart', [self.roundCnt])
         time.sleep(1)
         
     def weakestLink(self):    
@@ -153,7 +153,7 @@ class gameControllerClass():
         self.nextRound()
     
     def allCorrect(self):
-        statusUpdate('You have got all questions in round ' + str(self.round) + ' correct')
+        statusUpdate('You have got all questions in round ' + str(self.roundCnt) + ' correct')
         statusUpdate('You have £' + str(self.bank) + ' in the bank')
         sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
         sendClientEvent('allCorrect', [None])
@@ -245,13 +245,15 @@ def statusUpdate(info):
     for info in status:
         displayStatus.set(displayStatus.get()+info+'\n')
 
-def createQuestionGenerator(path, round=None):
-    if round: #if it is a new round create the question generator for that round
-        print('Importing Questions for Round ', round)
-        return questionGenerator(getListFromColumn(importQuestions(path), 2, round))
+def createQuestionGenerator(path, questionStart=0, roundCnt=None):
+    if roundCnt: #if it is a new round create the question generator for that round
+        print('Importing Questions for Round ', roundCnt)
+        questions = getListFromColumn(importQuestions(path), 2, roundCnt)
+        return questionGenerator(questions, questionStart), len(questions)
     else:
         print('Importing Questions')
-        return questionGenerator(importQuestions(path))
+        questions = importQuestions(path)
+        return questionGenerator(questions), len(questions)
         
 class serverListner (threading.Thread):
     def __init__(self):
@@ -303,12 +305,12 @@ class questionControl(threading.Thread):
         self.gameController = gameControllerClass()
         while not self.end and not self.gameController.checkFinalRound():
             if self.gameController.getRQuestionNo() == 1 and config['questions']['sortQuestions'] == True: #if it is a new round create the question generator for that round
-                self.questionGenerator = createQuestionGenerator(self.mainQ, self.gameController.round)
+                self.questionGenerator, self.questionLen = createQuestionGenerator(self.mainQ, 0, self.gameController.roundCnt)
             if not hasattr(self, 'questionGenerator'):
-                self.questionGenerator = createQuestionGenerator(self.mainQ)
+                self.questionGenerator, self.questionLen = createQuestionGenerator(self.mainQ)
             
             question, awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
-            askQuestion(self.gameController.round, self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
+            askQuestion(self.gameController.roundCnt, self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
             
             sendClientEvent('responseWait', [None])
             while not self.end:
@@ -323,8 +325,11 @@ class questionControl(threading.Thread):
                 #goto question
                 if network.messageInBuffer('gotoQu'):
                     questionNo = network.getMessageofType('gotoQu', False)
-                    if questionNo > 0 and questionNo <= len(questions):
-                        self.questionGenerator = createQuestionGenerator(mainQ, questionNo)
+                    if questionNo > 0 and questionNo <= self.questionLen:
+                        if config['questions']['sortQuestions'] == True:
+                            self.questionGenerator, self.questionLen = createQuestionGenerator(self.mainQ, questionNo, self.gameController.roundCnt)
+                        else:
+                            self.questionGenerator, self.questionLen = createQuestionGenerator(self.mainQ, questionNo)
                         break
                     
                 #server acts as a relay for prompt message
@@ -335,36 +340,37 @@ class questionControl(threading.Thread):
                         network.sendMessage('promtMsg', promptMessage, socketObj)
                         
         if not self.end:
-            self.questionGenerator = createQuestionGenerator(self.finalQ)
+            self.questionGenerator, self.questionLen = createQuestionGenerator(self.finalQ)
             while not self.end:
                 question, awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
                 askFinalQuestion(self.gameController.getRQuestionNo(), self.gameController.curContestant.name, question, awnser, self.gameController.nxtContestant.name, nxtQuestion, nxtAwnser)
+                sendClientEvent('responseWait', [None])
                 while not self.end:
-                    sendClientEvent('responseWait', [None])
-                    receivedCommand = network.getMessageofType('quResponse')
-                    if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 2:
-                        finalQuestionHandler(receivedCommand, question, awnser, self.gameController)
+                    if network.messageInBuffer('quResponse'):
+                        receivedCommand = network.getMessageofType('quResponse', False)
+                        if isinstance(receivedCommand, int) and receivedCommand > 0 and receivedCommand <= 2:
+                            finalQuestionHandler(receivedCommand, question, awnser, self.gameController)
+                            break
+                            
+                    #goto question
+                    if network.messageInBuffer('gotoQu'):
+                        questionNo = network.getMessageofType('gotoQu', False)
+                        if questionNo > 0 and questionNo <= self.questionLen:
+                            self.questionGenerator, self.questionLen = createQuestionGenerator(self.finalQ, questionNo)
+                            break
+                        
+                    #server acts as a relay for prompt message
+                    if network.messageInBuffer('promptMsg'):
+                        promptMessage = network.getMessageofType('promptMsg', False)
+                        misc.log('Relaying promptMessage \'' + promptMessage + '\'')
+                        for socketObj in socketList:
+                            network.sendMessage('promtMsg', promptMessage, socketObj)
+                            
+                    if self.gameController.isWinner():
+                        self.gameController.winner()
+                        self.end = True
                         break
                         
-                #goto question
-                if network.messageInBuffer('gotoQu'):
-                    questionNo = network.getMessageofType('gotoQu', False)
-                    if questionNo > 0 and questionNo <= len(questions):
-                        self.questionGenerator = createQuestionGenerator(mainQ, questionNo)
-                        break
-                    
-                #server acts as a relay for prompt message
-                if network.messageInBuffer('promptMsg'):
-                    promptMessage = network.getMessageofType('promptMsg', False)
-                    misc.log('Relaying promptMessage \'' + promptMessage + '\'')
-                    for socketObj in socketList:
-                        network.sendMessage('promtMsg', promptMessage, socketObj)
-                        
-                if self.gameController.isWinner():
-                    self.gameController.winner()
-                    self.end = True
-                    break
-                    
         if not self.end:
             pass
             #maybe do something at the end of the program - data collection? restart?
