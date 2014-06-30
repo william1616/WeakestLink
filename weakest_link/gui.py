@@ -346,7 +346,7 @@ def gameLoop():
             drawHead2HeadStart()
         
         if network.messageInBuffer('winner'):
-            winner = network.getMessageofType('winner', False)
+            [winner] = network.getMessageofType('winner', False)
             displayWinner(winner.name)
         
         pygame.display.update()
