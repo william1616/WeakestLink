@@ -55,7 +55,7 @@ class moneyPlaceholder():
         self.active = False
         self.change()
         
-class awnserPlaceholder():
+class answerPlaceholder():
     def __init__(self, surface, coordinates, font=None, textColour=None):
         self.surface = surface
         self.coordinates = coordinates
@@ -64,11 +64,11 @@ class awnserPlaceholder():
         #state none=blue no symbol true=blue and tick false=red and cross
         if not textColour: textColour = pygame.Color(0, 0, 0)
         if not font: font = pygame.font.SysFont(config['pygame']['font'], int(self.surface.get_height() / 25))
-        if state == False: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\incorrectRed.png'))
-        elif state == True: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\correctBlue.png'))
-        else: awnserImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\neutralBlue.png'))
-        awnserImage = pygame.transform.scale(awnserImage, (int(self.surface.get_width() / 10), int(self.surface.get_height() / (40 / 3))))
-        self.surface.blit(awnserImage, self.coordinates)
+        if state == False: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\incorrectRed.png'))
+        elif state == True: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\correctBlue.png'))
+        else: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\neutralBlue.png'))
+        answerImage = pygame.transform.scale(answerImage, (int(self.surface.get_width() / 10), int(self.surface.get_height() / (40 / 3))))
+        self.surface.blit(answerImage, self.coordinates)
     def correct(self):
         self.change(True)
     def incorrect(self):
@@ -153,20 +153,20 @@ def drawFinalQuestion(questionCnt, question, contestants):
     mainRect.topright = (int(displaySurface.get_width() * 2 / 9), int((displaySurface.get_height() - titleRect.height) * 6 / 7))
     displaySurface.blit(mainText, mainRect)
     
-    awnserPlaceholder1 = {}
-    awnserPlaceholder2 = {}
+    answerPlaceholder1 = {}
+    answerPlaceholder2 = {}
     
     for i in range(2, 7):
-        awnserPlaceholder1[i] = awnserPlaceholder(displaySurface, (int(displaySurface.get_width() * ((i) / 7)), int((displaySurface.get_height() - titleRect.height) * 5 / 7)))
+        answerPlaceholder1[i] = answerPlaceholder(displaySurface, (int(displaySurface.get_width() * ((i) / 7)), int((displaySurface.get_height() - titleRect.height) * 5 / 7)))
         if contestants[0].finalScore[i - 2] == True:
-            awnserPlaceholder1[i].correct()
+            answerPlaceholder1[i].correct()
         elif contestants[0].finalScore[i - 2] == False:
-            awnserPlaceholder1[i].incorrect()
-        awnserPlaceholder2[i] = awnserPlaceholder(displaySurface, (int(displaySurface.get_width() * ((i) / 7)), int((displaySurface.get_height() - titleRect.height) * 6 / 7)))
+            answerPlaceholder1[i].incorrect()
+        answerPlaceholder2[i] = answerPlaceholder(displaySurface, (int(displaySurface.get_width() * ((i) / 7)), int((displaySurface.get_height() - titleRect.height) * 6 / 7)))
         if contestants[1].finalScore[i - 2] == True:
-            awnserPlaceholder2[i].correct()
+            answerPlaceholder2[i].correct()
         elif contestants[1].finalScore[i - 2] == False:
-            awnserPlaceholder2[i].incorrect()
+            answerPlaceholder2[i].incorrect()
             
 def drawHead2Head(questionCnt, contestants):
     displaySurface.fill(blue)
@@ -305,7 +305,7 @@ def gameLoop():
             contestantList = network.getMessageofType('contestantUpdate', False)
             
         if network.messageInBuffer('askQuestion'):
-            rQuestion, contestant, question, awnser = network.getMessageofType('askQuestion', False)
+            rQuestion, contestant, question, answer = network.getMessageofType('askQuestion', False)
             drawQuestion(round, rQuestion, question)
             updateRndScores(moneyCount, money, bankVal)
             responseWait = True
@@ -334,7 +334,7 @@ def gameLoop():
             responseWait = False
             
         if network.messageInBuffer('askFinalQuestion'):
-            rQuestion, contestant, question, awnser = network.getMessageofType('askFinalQuestion', False)
+            rQuestion, contestant, question, answer = network.getMessageofType('askFinalQuestion', False)
             if head2head:
                 drawHead2Head(rQuestion - config['questions']['finalRndQCnt'], contestantList)
             else:

@@ -273,7 +273,7 @@ def variableUpdates():
         status.set('Round ' + str(round) + ' starting')
         
     if network.messageInBuffer('askQuestion'):
-        rQuestion, contestant, question, awnser = network.getMessageofType('askQuestion', False)
+        rQuestion, contestant, question, answer = network.getMessageofType('askQuestion', False)
         status.set('Round ' + str(round) + ' Question ' + str(rQuestion))
         mainQuestion.set(contestant + ': ' + question)
         
@@ -306,7 +306,7 @@ def variableUpdates():
         finalFrame.grid()
         
     if network.messageInBuffer('askFinalQuestion'):
-        rQuestion, contestant, question, awnser = network.getMessageofType('askFinalQuestion', False)
+        rQuestion, contestant, question, answer = network.getMessageofType('askFinalQuestion', False)
         finalStatus.set('Final Question ' + str(rQuestion))
         finalQuestion.set(contestant + ': ' + question)
         if finalName1.get() == '':

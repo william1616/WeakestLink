@@ -120,19 +120,19 @@ class gameControllerClass():
         time.sleep(1)
         
     def askQuestion(self):
-        question, self.awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
+        question, self.answer, nxtQuestion, nxtanswer = next(self.questionGenerator)
         statusUpdate('Round ' + str(self.roundCnt) + ' Question ' + str(self.getRQuestionNo()))
         statusUpdate(self.curContestant.name + ': ' + question)
-        sendClientEvent('askQuestion', [self.getRQuestionNo(), self.curContestant.name, question, self.awnser])
-        sendClientEvent('nxtQuestion', [self.getRQuestionNo() + 1, self.nxtContestant.name, nxtQuestion, nxtAwnser])
-        return question, self.awnser, nxtQuestion, nxtAwnser
+        sendClientEvent('askQuestion', [self.getRQuestionNo(), self.curContestant.name, question, self.answer])
+        sendClientEvent('nxtQuestion', [self.getRQuestionNo() + 1, self.nxtContestant.name, nxtQuestion, nxtanswer])
+        return question, self.answer, nxtQuestion, nxtanswer
         
     def questionHandler(self, event):
         global socketList
         if event == 1:
-            self.correctAns(self.awnser)
+            self.correctAns(self.answer)
         elif event == 2:
-            self.incorrectAns(self.awnser)
+            self.incorrectAns(self.answer)
         elif event == 3:
             self.bankMoney()
             return False
@@ -142,18 +142,18 @@ class gameControllerClass():
         return True
         
     def askFinalQuestion(self):
-        question, self.awnser, nxtQuestion, nxtAwnser = next(self.questionGenerator)
+        question, self.answer, nxtQuestion, nxtanswer = next(self.questionGenerator)
         statusUpdate('Final Question ' + str(self.getRQuestionNo()) + ': ' + str(question))
         statusUpdate(self.curContestant.name + ': ' + question)
-        sendClientEvent('askFinalQuestion', [self.getRQuestionNo(), self.curContestant.name, question, self.awnser])
-        sendClientEvent('nxtFinalQuestion', [self.getRQuestionNo() + 1, self.nxtContestant.name, nxtQuestion, nxtAwnser])
-        return question, self.awnser, nxtQuestion, nxtAwnser
+        sendClientEvent('askFinalQuestion', [self.getRQuestionNo(), self.curContestant.name, question, self.answer])
+        sendClientEvent('nxtFinalQuestion', [self.getRQuestionNo() + 1, self.nxtContestant.name, nxtQuestion, nxtanswer])
+        return question, self.answer, nxtQuestion, nxtanswer
         
     def finalQuestionHandler(self, event):
         if event == 1:
-            self.finalCorrect(self.awnser)
+            self.finalCorrect(self.answer)
         elif event == 2:
-            self.finalIncorrect(self.awnser)
+            self.finalIncorrect(self.answer)
         if self.getRQuestionNo() == config['questions']['finalRndQCnt'] + 1: #if all final questions have been asked determine the winner or go head2head
             self.detFinalEnd()
         
@@ -187,12 +187,12 @@ class gameControllerClass():
         self.curContestant = self.contestants[self.crtContestantIndex]
         self.nxtContestant = self.contestants[nxtContestantIndex]
     
-    def correctAns(self, awnser):
-        statusUpdate('Correct - ' + awnser)
+    def correctAns(self, answer):
+        statusUpdate('Correct - ' + answer)
         self.curRndCtrl.correct += 1
         self.curRndCtrl.moneyCounter += 1
         self.curContestant.incScore()
-        sendClientEvent('correctAns', [awnser])
+        sendClientEvent('correctAns', [answer])
         time.sleep(1)
         if self.curRndCtrl.testAllCorrect():
             sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
@@ -201,10 +201,10 @@ class gameControllerClass():
         else:
             self.ans()
         
-    def incorrectAns(self, awnser):
-        statusUpdate('Incorrect - ' + awnser)
+    def incorrectAns(self, answer):
+        statusUpdate('Incorrect - ' + answer)
         self.curRndCtrl.moneyCounter = 0
-        sendClientEvent('incorrectAns', [awnser])
+        sendClientEvent('incorrectAns', [answer])
         time.sleep(1)
         self.ans()
         
@@ -248,23 +248,23 @@ class gameControllerClass():
         self.createFinalQuestionGen()
         sendClientEvent('finalStart', [None])
         
-    def finalCorrect(self, awnser):
-        statusUpdate('Correct - ' + awnser)
+    def finalCorrect(self, answer):
+        statusUpdate('Correct - ' + answer)
         self.curRndCtrl.correct += 1
         self.curContestant.correctFinalQu(self.curRndCtrl.rQuestions)
-        sendClientEvent('finalCorrectAns', [awnser])
+        sendClientEvent('finalCorrectAns', [answer])
         self.finalAns()
         
-    def finalIncorrect(self, awnser):
-        statusUpdate('Incorrect - ' + awnser)
-        sendClientEvent('finalIncorrectAns', [awnser])
-        #if head2head remove the first incorrect awnsering contestant
+    def finalIncorrect(self, answer):
+        statusUpdate('Incorrect - ' + answer)
+        sendClientEvent('finalIncorrectAns', [answer])
+        #if head2head remove the first incorrect answering contestant
         if self.curRndCtrl.rQuestions > config['questions']['finalRndQCnt']:
             statusUpdate(self.contestants[self.crtContestantIndex].name + ' you are the Weakest Link! Goodbye')
             sendClientEvent('contestantEliminated', [self.contestants[self.crtContestantIndex]])
             self.removedContestants.append(self.contestants.pop(self.crtContestantIndex))
             time.sleep(1)
-        else: #otherwise mark the question as incorrectly awnsered
+        else: #otherwise mark the question as incorrectly answered
             self.curContestant.incorrectFinalQu(self.curRndCtrl.rQuestions)
             self.finalAns() #and go to the next question
     
@@ -605,7 +605,7 @@ def importQuestions(file):
         questionfile = csv.reader(csvfile)
         for row in questionfile:
             try:
-                # where row[0] = questions & row[1] = awnser
+                # where row[0] = questions & row[1] = answer
                 if row[0] and row[1] and row[2]:
                     questions.append([row[0], row[1], int(row[2])])
                 elif row[0] and row[1]:

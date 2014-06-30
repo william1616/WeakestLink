@@ -30,22 +30,22 @@ class timedLabel(ttk.Label):
             pass
     
 def variableUpdates():
-    global status, question, awnser, nextQuestion, nextAwnser, contestants, round, contestantList, mainFrame
+    global status, question, answer, nextQuestion, nextanswer, contestants, round, contestantList, mainFrame
     
     if network.messageInBuffer('rndStart'):
         [round] = network.getMessageofType('rndStart', False)
         status.set('Round ' + str(round) + ' starting')
         
     if network.messageInBuffer('askQuestion'):
-        rQuestion, contestant, questionStr, awnserStr = network.getMessageofType('askQuestion', False)
+        rQuestion, contestant, questionStr, answerStr = network.getMessageofType('askQuestion', False)
         question.set(contestant + ': ' + questionStr)
-        awnser.set(awnserStr)
+        answer.set(answerStr)
         status.set('Round ' + str(round) + ' Question ' + str(rQuestion))
         
     if network.messageInBuffer('nxtQuestion'):
-        nxtRQuestion, nxtContestant, nxtQuestionStr, nxtAwnserStr = network.getMessageofType('nxtQuestion', False)
+        nxtRQuestion, nxtContestant, nxtQuestionStr, nxtanswerStr = network.getMessageofType('nxtQuestion', False)
         nextQuestion.set(nxtContestant + ': ' + nxtQuestionStr)
-        nextAwnser.set(nxtAwnserStr)
+        nextanswer.set(nxtanswerStr)
         
     if network.messageInBuffer('rndScoreUpdate'):
         moneyCount, money, bankVal = network.getMessageofType('rndScoreUpdate', False)
@@ -77,15 +77,15 @@ def variableUpdates():
         status.set('Final Round starting')
         
     if network.messageInBuffer('askFinalQuestion'):
-        rQuestion, contestant, questionValue, awnserValue = network.getMessageofType('askFinalQuestion', False)
+        rQuestion, contestant, questionValue, answerValue = network.getMessageofType('askFinalQuestion', False)
         question.set(contestant + ': ' + questionValue)
-        awnser.set(awnserValue)
+        answer.set(answerValue)
         status.set('Final Question ' + str(rQuestion))
         
     if network.messageInBuffer('nxtFinalQuestion'):
-        nxtRQuestion, nxtContestant, nxtQuestion, nxtAwnser = network.getMessageofType('nxtFinalQuestion', False)
+        nxtRQuestion, nxtContestant, nxtQuestion, nxtanswer = network.getMessageofType('nxtFinalQuestion', False)
         nextQuestion.set(nxtContestant + ': ' + nxtQuestion)
-        nextAwnser.set(nxtAwnser)
+        nextanswer.set(nxtanswer)
         
     if network.getMessageofType('headStart', False):
         status.set('Going to Head to Head Round')
@@ -146,7 +146,7 @@ def isServerRunning():
             mainTopLevel.root.after(100, isServerRunning)
         
 def initTk(parent):
-    global address, startFrame, waitFrame, mainFrame, mainTopLevel, status, question, awnser, nextQuestion, nextAwnser, contestants
+    global address, startFrame, waitFrame, mainFrame, mainTopLevel, status, question, answer, nextQuestion, nextanswer, contestants
     
     mainTopLevel = parent
     
@@ -174,9 +174,9 @@ def initTk(parent):
     
     status = StringVar()
     question = StringVar()
-    awnser = StringVar()
+    answer = StringVar()
     nextQuestion = StringVar()
-    nextAwnser = StringVar()
+    nextanswer = StringVar()
     contestants = StringVar()
     message = StringVar()
     
@@ -186,13 +186,13 @@ def initTk(parent):
     
     ttk.Label(mainFrame, textvariable=status, font=titleFont).grid(column=0, row=0, columnspan=4, sticky=N)
     ttk.Label(mainFrame, text="Question", width=columnWidth, font=titleFont).grid(column=1, row=1, sticky=(W, N))
-    ttk.Label(mainFrame, text="Awnser", width=columnWidth, font=titleFont).grid(column=2, row=1, sticky=(W, N))
+    ttk.Label(mainFrame, text="answer", width=columnWidth, font=titleFont).grid(column=2, row=1, sticky=(W, N))
     ttk.Label(mainFrame, text="Current", font=titleFont).grid(column=0, row=2, sticky=(W, N))
     ttk.Label(mainFrame, text="Next", font=titleFont).grid(column=0, row=3, sticky=(W, N))
     ttk.Label(mainFrame, textvariable=question, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=1, row=2, sticky=(W, N))
-    ttk.Label(mainFrame, textvariable=awnser, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=2, row=2, sticky=(W, N))
+    ttk.Label(mainFrame, textvariable=answer, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=2, row=2, sticky=(W, N))
     ttk.Label(mainFrame, textvariable=nextQuestion, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=1, row=3, sticky=(W, N))
-    ttk.Label(mainFrame, textvariable=nextAwnser, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=2, row=3, sticky=(W, N))
+    ttk.Label(mainFrame, textvariable=nextanswer, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=2, row=3, sticky=(W, N))
     ttk.Label(mainFrame, text="Contestants", font=titleFont).grid(column=3, row=1, sticky=(W, N))
     ttk.Label(mainFrame, textvariable=contestants, font=mainFont).grid(column=3, row=2, rowspan=2, sticky=(W, N))
     ttk.Label(mainFrame, text="Messages", font=titleFont).grid(column=0, row=4, sticky=N)
