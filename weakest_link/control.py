@@ -291,7 +291,7 @@ def variableUpdates():
             try:
                 voteVar[i].set(contestantList[i].name)
                 voteScore[i].set(contestantList[i].score)
-                voteButton[i].config(command=lambda contestantClass=contestantList[i]: toggleContestant(contestantClass))
+                voteButton[i].config(command=lambda contestantClass=contestantList[i]: toggleContestant(contestantClass), state='disabled')
             except IndexError:
                 voteButton[i].grid_forget()
                 voteLabel[i].grid_forget()
