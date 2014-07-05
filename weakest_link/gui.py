@@ -354,18 +354,28 @@ def gameLoop():
         fpsClock.tick(FPS)
 
 def start():
-    global address, socket, startFrame, waitFrame
+    global address, socket, startFrame, mainTopLevel
     if network.attemptConnect(socket, address.get(), config['server']['bindPort']):
-        startFrame.grid_forget()
-        waitFrame.grid()
+        mainTopLevel.withdraw()
         network.addUsedType('gameStart')
+        initPygame()
+        drawStartWait()
         isServerRunning()
     else:
         messagebox.showerror("Error", "Could not find server \"" + address.get() + "\"")
-            
+        
+def drawStartWait():
+    displaySurface.fill(blue)
+    titleFont = pygame.font.SysFont(config['pygame']['font'], int(displaySurface.get_height()  / (160 / 11)))
+    
+    text = titleFont.render("The Weakest Link", True, yellow)
+    textRect = text.get_rect()
+    textRect.center = (int(displaySurface.get_width() / 2), int(displaySurface.get_height() / 2))
+    displaySurface.blit(text, textRect)
+    
 def isServerRunning():
     global mainTopLevel            
-    if network.getMessageofType('gameStart', False): #if no longer listning for conections
+    if network.getMessageofType('gameStart', False): #if no longer listening for connections
         network.addUsedType('rndStart')
         network.addUsedType('rndScoreUpdate')
         network.addUsedType('correctAns')
@@ -382,17 +392,17 @@ def isServerRunning():
         network.addUsedType('headStart')
         network.addUsedType('winner')
         network.removeUsedType('gameStart')
-        mainTopLevel.withdraw()
-        initPygame()
         gameLoop()
     else:
+        pygame.display.update()
+        fpsClock.tick(FPS)
         if mainTopLevel.config()['class'][4] == 'Tk':
             mainTopLevel.after(100, isServerRunning)
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
             mainTopLevel.root.after(100, isServerRunning)
         
 def initTk(parent):
-    global address, startFrame, waitFrame, mainTopLevel
+    global address, startFrame, mainTopLevel
     
     mainTopLevel = parent
     
@@ -423,16 +433,6 @@ def initTk(parent):
     ttk.Button(startFrame, text="Exit", command=close).grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
-    
-    waitFrame = ttk.Frame(parent, padding="3 3 3 3")
-    waitFrame.grid(column=0, row=0, sticky=(N, W, E, S))
-    waitFrame.columnconfigure(0, weight=1)
-    waitFrame.rowconfigure(0, weight=1)
-    
-    ttk.Label(waitFrame, text="Connected to Server").grid(column=0, row=0, sticky=N)
-    ttk.Label(waitFrame, text="Waiting for Server to Start").grid(column=0, row=1, sticky=N)
-    
-    waitFrame.grid_remove()
     
     parent.protocol("WM_DELETE_WINDOW", close)
     
