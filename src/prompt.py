@@ -1,16 +1,6 @@
 from tkinter import *
 from tkinter import ttk, messagebox, font
-import os.path
-
-path = os.path.dirname(__file__)
-try:
-    import network, misc
-except ImportError:
-    import importlib.machinery
-    loader = importlib.machinery.SourceFileLoader("network", os.path.join(path, "network.py"))
-    network = loader.load_module("network")
-    loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
-    misc = loader.load_module("misc")
+import os.path, network, misc
 
 class timedLabel(ttk.Label):
     #grid on calling

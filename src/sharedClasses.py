@@ -1,14 +1,5 @@
-import os.path
+import os.path, misc
 from math import floor
-
-path = os.path.dirname(__file__)
-
-try:
-    import misc
-except ImportError:
-    import importlib.machinery
-    loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
-    misc = loader.load_module("misc")
 
 config = misc.initConfig()
 

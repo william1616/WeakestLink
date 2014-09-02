@@ -1,20 +1,8 @@
 from tkinter import *
 from tkinter import ttk
-
-try:
-    import server, control, gui, misc, prompt
-except ImportError:
-    import importlib.machinery
-    loader = importlib.machinery.SourceFileLoader("server", "./weakest_link/server.py")
-    server = loader.load_module("server")
-    loader = importlib.machinery.SourceFileLoader("control", "./weakest_link/control.py")
-    control = loader.load_module("control")
-    loader = importlib.machinery.SourceFileLoader("prompt", "./weakest_link/prompt.py")
-    prompt = loader.load_module("prompt")
-    loader = importlib.machinery.SourceFileLoader("gui", "./weakest_link/gui.py")
-    gui = loader.load_module("gui")
-    loader = importlib.machinery.SourceFileLoader("misc", "./weakest_link/misc.py")
-    misc = loader.load_module("misc")
+from sys import path
+from os import path as osPath
+import server, control, gui, misc, prompt
 
 config = misc.initConfig()
     

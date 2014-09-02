@@ -1,22 +1,9 @@
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from operator import itemgetter
-import csv, threading, time, os.path, sys
+from sharedClasses import contestantClass
+import csv, threading, time, os.path, network, misc
 
-path = os.path.dirname(__file__)
-try:
-    import network, misc
-    from sharedClasses import contestantClass
-    
-except ImportError:
-    import importlib.machinery
-    loader = importlib.machinery.SourceFileLoader("network", os.path.join(path, "network.py"))
-    network = loader.load_module("network")
-    loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
-    misc = loader.load_module("misc")
-    loader = importlib.machinery.SourceFileLoader("sharedClasses", os.path.join(path, "sharedClasses.py"))
-    contestantClass = loader.load_module("sharedClasses").contestantClass
-    
 status = []
 socketList = []
 

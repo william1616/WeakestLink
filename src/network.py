@@ -1,15 +1,7 @@
-import socket, hashlib, select, os.path, pickle
+import socket, hashlib, select, os.path, pickle, misc
 from  threading import Thread
 from queue import Queue, Empty
 from time import sleep
-
-path = os.path.dirname(__file__)
-try:
-    import misc
-except ImportError:
-    import importlib.machinery
-    loader = importlib.machinery.SourceFileLoader("misc", os.path.join(path, "misc.py"))
-    misc = loader.load_module("misc")
     
 usedTypes = []
     
