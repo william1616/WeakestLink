@@ -25,7 +25,7 @@ class mainRoundControllerClass():
             if os.path.isabs(config['questions']['mainQ']):
                 questionPath = config['questions']['mainQ']
             else:
-                questionPath = os.path.abspath(os.path.join("..\\", config['questions']['mainQ']))
+                questionPath = os.path.abspath(config['questions']['mainQ'])
             self.questionGenerator, self.questionLen = createQuestionGenerator(questionPath, questionNo, self.round)
         # if sortQuestions is not True the self.questionGenerator attribute needs to be configured to point to the main questionGenerator
         
@@ -49,8 +49,8 @@ class gameControllerClass():
         for i in range(1, self.contestantCnt + 1):
             self.roundControllers[i] = mainRoundControllerClass(i)
         self.crtContestantIndex = -1
-        self.createQuestionGen()
         self.nextRound()
+        self.createQuestionGen()
         
         # init ClienSide Variables
         sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
@@ -67,7 +67,7 @@ class gameControllerClass():
             if os.path.isabs(config['questions']['mainQ']):
                 questionPath = config['questions']['mainQ']
             else:
-                questionPath = os.path.abspath(os.path.join("..\\", config['questions']['mainQ']))
+                questionPath = os.path.abspath(config['questions']['mainQ'])
             self.questionGenerator, self.questionLen = createQuestionGenerator(questionPath, questionNo)
         else:
             self.getCurRndCtrl().createQuestionGen(questionNo)
@@ -76,7 +76,7 @@ class gameControllerClass():
         if os.path.isabs(config['questions']['finalQ']):
             questionPath = config['questions']['finalQ']
         else:
-            questionPath = os.path.abspath(os.path.join("..\\", config['questions']['finalQ']))
+            questionPath = os.path.abspath(config['questions']['finalQ'])
         self.questionGenerator, self.questionLen = createQuestionGenerator(questionPath, questionNo)
         
     def getCurRndCtrl(self):
@@ -98,6 +98,8 @@ class gameControllerClass():
         for i in self.contestants:
             i.clrScore()
         sendClientEvent('contestantUpdate', self.contestants)
+        if config['questions']['sortQuestions'] == True:
+            self.questionGenerator = self.getCurRndCtrl().questionGenerator
         self.nextContestant()
         if self.checkFinalRound():
             self.startFinal()

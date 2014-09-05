@@ -7,8 +7,8 @@
         "finalQ": "resources/questions.csv",
         "finalRndQCnt": 10,
         "mainQ": "resources/questions.csv",
-        "sortQuestions": false,
-        "contestantCnt": 8
+        "sortQuestions": true,
+        "contestantCnt": 7
     },
     "pygame": {
         "height": 600,
@@ -23,7 +23,7 @@
         "bindAddress": "localhost"
     },
     "debug": {
-        "fileName": "log.txt",
+        "fileName": "log/log.txt",
         "log": false
     }
 }

@@ -176,7 +176,7 @@ def initTk(parent):
     
     ttk.Label(mainFrame, textvariable=status, font=titleFont).grid(column=0, row=0, columnspan=4, sticky=N)
     ttk.Label(mainFrame, text="Question", width=columnWidth, font=titleFont).grid(column=1, row=1, sticky=(W, N))
-    ttk.Label(mainFrame, text="answer", width=columnWidth, font=titleFont).grid(column=2, row=1, sticky=(W, N))
+    ttk.Label(mainFrame, text="Answer", width=columnWidth, font=titleFont).grid(column=2, row=1, sticky=(W, N))
     ttk.Label(mainFrame, text="Current", font=titleFont).grid(column=0, row=2, sticky=(W, N))
     ttk.Label(mainFrame, text="Next", font=titleFont).grid(column=0, row=3, sticky=(W, N))
     ttk.Label(mainFrame, textvariable=question, wraplength=wrapWidth, width=columnWidth, font=mainFont).grid(column=1, row=2, sticky=(W, N))

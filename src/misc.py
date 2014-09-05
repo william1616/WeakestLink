@@ -15,7 +15,7 @@ class threadFunc(threading.Thread):
         self.end = True
         threading.Thread.join()
 
-def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json')):
+def initConfig(fileName='config.json'):
     #options list here needs to be kept up to date with config fields
     options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "resources/questions.csv", "finalQ": "resources/questions.csv", "finalRndQCnt": 10, "sortQuestions": False, "contestantCnt": 8}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": False}, "pygame": {"font": "microsoftsansserif", "window_title": "The Weakest Link", "fps": 10, "width": 800, "height": 600, "fullscreen": False}}
     with open(fileName, 'r') as configFile:
@@ -40,13 +40,13 @@ def initConfig(fileName=os.path.join(os.path.dirname(__file__), '..\\config.json
             writeConfig(options, fileName)
             return options
 
-def writeConfig(config, fileName=os.path.join(os.path.dirname(__file__), '..\\config.json')):
+def writeConfig(config, fileName=os.path.join(os.path.dirname(__file__), 'config.json')):
     with open(fileName, 'w') as configFile:
         dump(config, configFile, indent=4)
             
 config = initConfig()
 
-def log(text, forceLog=False, fileName=os.path.join(os.path.dirname(__file__), '..//', config['debug']['fileName'])):
+def log(text, forceLog=False, fileName=os.path.join(os.path.dirname(__file__), config['debug']['fileName'])):
     logName = extract_stack()[0][0]
     if config['debug']['log'] or forceLog:
         with open(fileName, 'a') as file:

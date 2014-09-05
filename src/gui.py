@@ -30,8 +30,8 @@ class moneyPlaceholder():
     def change(self, text=None, font=None, textColour=None):
         if not textColour: textColour = pygame.Color(0, 0, 0)
         if not font: font = pygame.font.SysFont(config['pygame']['font'], int(self.surface.get_height() / 25))
-        if self.active: moneyImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\redPlaceholder.png'))
-        else: moneyImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\bluePlaceholder.png'))
+        if self.active: moneyImage = pygame.image.load(os.path.join(os.path.dirname(__file__), 'resources\\redPlaceholder.png'))
+        else: moneyImage = pygame.image.load(os.path.join(os.path.dirname(__file__), 'resources\\bluePlaceholder.png'))
         moneyImage = pygame.transform.scale(moneyImage, (int(self.surface.get_width() / (160 / 27)), int(self.surface.get_height() / (40 / 3))))
         self.surface.blit(moneyImage, self.coordinates)
         if text:
@@ -55,9 +55,9 @@ class answerPlaceholder():
         #state none=blue no symbol true=blue and tick false=red and cross
         if not textColour: textColour = pygame.Color(0, 0, 0)
         if not font: font = pygame.font.SysFont(config['pygame']['font'], int(self.surface.get_height() / 25))
-        if state == False: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\incorrectRed.png'))
-        elif state == True: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\correctBlue.png'))
-        else: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), '..\\resources\\neutralBlue.png'))
+        if state == False: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), 'resources\\incorrectRed.png'))
+        elif state == True: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), 'resources\\correctBlue.png'))
+        else: answerImage = pygame.image.load(os.path.join(os.path.dirname(__file__), 'resources\\neutralBlue.png'))
         answerImage = pygame.transform.scale(answerImage, (int(self.surface.get_width() / 10), int(self.surface.get_height() / (40 / 3))))
         self.surface.blit(answerImage, self.coordinates)
     def correct(self):
