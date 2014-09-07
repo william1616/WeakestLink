@@ -18,8 +18,9 @@ def start():
         messagebox.showerror("Error", "Could not find server \"" + address.get() + "\"")
 
 def isServerRunning():
-    global socket, startTopLevel, mainTopLevel, running
+    global startTopLevel, guiStartTopLevel, voteTopLevel, mainTopLevel
     if network.getMessageofType('gameStart', False): #if no longer listning for conections
+        network.removeUsedType('gameStart')
         network.addUsedType('rndStart')
         network.addUsedType('askQuestion')
         network.addUsedType('responseWait')
@@ -30,16 +31,24 @@ def isServerRunning():
         network.addUsedType('askFinalQuestion')
         network.addUsedType('headStart')
         network.addUsedType('winner')
-        network.removeUsedType('gameStart')
         variableUpdates()
         startTopLevel.withdraw()
+        voteTopLevel.deiconify()
+        guiStartTopLevel.deiconify()
         mainTopLevel.deiconify()
-        running = True
+        disableButton()
     else:
         if mainTopLevel.config()['class'][4] == 'Tk':
             mainTopLevel.after(100, isServerRunning)
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
             mainTopLevel.root.after(100, isServerRunning)
+            
+def startGUI():
+    global socket, guiStartTopLevel, running
+    network.sendMessage('startGUI', [None], socket)
+    guiStartTopLevel.withdraw()
+    running = True
+    #Wait for a request from the server for a response before enabling the response buttons
 
 def toggleContestant(contestantClass):
     global socket, voteTopLevel
@@ -71,7 +80,7 @@ def disableButton():
         value.config(state='disabled')
         
 def initTk(parent):
-    global address, mainQuestion, status, cur_money, bank, voteVar, voteButton, voteScore, voteLabel, config, startFrame, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainFrame, finalFrame, mainButton, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
+    global address, mainQuestion, status, cur_money, bank, voteVar, voteButton, voteScore, voteLabel, config, startFrame, guiStartTopLevel, startTopLevel, mainTopLevel, voteTopLevel, waitFrame, mainFrame, finalFrame, mainButton, finalQuestion, finalStatus, finalName1, finalName2, finalScore1, finalScore2
 
     mainTopLevel = parent
     parent.title(config['Tk']['window_title'])
@@ -110,7 +119,20 @@ def initTk(parent):
     ttk.Button(startFrame, text="Exit", command=close).grid(column=2, row=2, sticky=N)
     ttk.Entry(startFrame, textvariable=address).grid(column=1, row=1, sticky=N)
     ttk.Label(startFrame, text="Server IP address").grid(column=2, row=1, sticky=N)
-
+    
+    guiStartTopLevel = Toplevel(parent)
+    guiStartTopLevel.title(config['Tk']['window_title'])
+    guiStartTopLevel.resizable(False, False)
+    
+    guiStartFrame = ttk.Frame(guiStartTopLevel, padding="3 3 3 3")
+    guiStartFrame.grid(column=0, row=0, sticky=(N, W, E, S))
+    guiStartFrame.columnconfigure(0, weight=1)
+    guiStartFrame.rowconfigure(0, weight=1)
+    
+    ttk.Button(guiStartFrame, text='Start Game', width=100, command=startGUI).grid(column=0, row=0, sticky=N)
+    
+    guiStartTopLevel.withdraw()
+    
     mainFrame = ttk.Frame(parent, padding="3 3 3 3")
     mainFrame.grid(column=0, row=0, sticky=(N, W, E, S))
     mainFrame.columnconfigure(0, weight=1)
@@ -183,6 +205,8 @@ def initTk(parent):
     voteTopLevel = Toplevel(parent)
     voteTopLevel.title(config['Tk']['window_title'])
     voteTopLevel.resizable(False, False)
+    
+    voteTopLevel.withdraw()
     
     voteFrame = ttk.Frame(voteTopLevel, padding="3 3 3 3")
     voteFrame.grid(column=0, row=0, sticky=(N, W, E, S))

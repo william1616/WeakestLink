@@ -366,6 +366,21 @@ def drawStartWait():
 def isServerRunning():
     global mainTopLevel            
     if network.getMessageofType('gameStart', False): #if no longer listening for connections
+        network.removeUsedType('gameStart')
+        network.addUsedType('startGUI')
+        startGUI()
+    else:
+        pygame.display.update()
+        fpsClock.tick(FPS)
+        if mainTopLevel.config()['class'][4] == 'Tk':
+            mainTopLevel.after(100, isServerRunning)
+        elif mainTopLevel.config()['class'][4] == 'Toplevel':
+            mainTopLevel.root.after(100, isServerRunning)
+            
+def startGUI():
+    global mainTopLevel
+    if network.getMessageofType('startGUI', False):
+        network.removeUsedType('gameStart')
         network.addUsedType('rndStart')
         network.addUsedType('rndScoreUpdate')
         network.addUsedType('correctAns')
@@ -381,15 +396,14 @@ def isServerRunning():
         network.addUsedType('askFinalQuestion')
         network.addUsedType('headStart')
         network.addUsedType('winner')
-        network.removeUsedType('gameStart')
         gameLoop()
     else:
         pygame.display.update()
         fpsClock.tick(FPS)
         if mainTopLevel.config()['class'][4] == 'Tk':
-            mainTopLevel.after(100, isServerRunning)
+            mainTopLevel.after(100, startGUI)
         elif mainTopLevel.config()['class'][4] == 'Toplevel':
-            mainTopLevel.root.after(100, isServerRunning)
+            mainTopLevel.root.after(100, startGUI)
         
 def initTk(parent):
     global address, startFrame, mainTopLevel
@@ -432,9 +446,6 @@ def close():
     if mainTopLevel.config()['class'][4] == 'Toplevel': mainTopLevel.root.deiconify()
     mainTopLevel.destroy()
     pygame.quit()
-
-def netTypesDeclaration():
-    network.addUsedType('variables')
     
 def setup():
     global socket, config
@@ -442,7 +453,6 @@ def setup():
     print('Importing Config...')
     config = misc.initConfig()
     print('Config Imported')
-    netTypesDeclaration()
 
 if __name__ == '__main__':
     setup()

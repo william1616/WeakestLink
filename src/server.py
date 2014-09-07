@@ -69,7 +69,7 @@ class gameControllerClass():
             else:
                 questionPath = os.path.abspath(config['questions']['mainQ'])
             self.questionGenerator, self.questionLen = createQuestionGenerator(questionPath, questionNo)
-        else:
+        elif self.getCurRndCtrl().rQuestions != questionNo + 1:
             self.getCurRndCtrl().createQuestionGen(questionNo)
             
     def createFinalQuestionGen(self, questionNo=0):
@@ -367,6 +367,7 @@ class questionControl(threading.Thread):
     def __init__(self):
         super().__init__()
         self.end = False
+        self.startGame = False
         
     def run(self):
         self.gameController = gameControllerClass()
@@ -384,7 +385,11 @@ class questionControl(threading.Thread):
             #do something at the end of the program?
         
     def mainLoop(self):
-        self.gameController.askQuestion()
+        self.gameController.askQuestion() #If the game has not started the Data is not sent to GUI as it is not listning
+        if not self.startGame and not self.end:
+            self.waitForGameStart() #Wait for startGame event before requesting a response
+            self.gameController = gameControllerClass() #Resend the Data for GUI
+            self.gameController.askQuestion()
         sendClientEvent('responseWait', [None])
         while not self.end:
             if network.messageInBuffer('quResponse'):
@@ -427,6 +432,15 @@ class questionControl(threading.Thread):
                 self.gameController.gotoQuestion(questionNo)
                 return True
         return False
+        
+    def waitForGameStart(self):
+        misc.log('Waiting for Game Start')
+        if network.getMessageofType('startGUI'):
+            self.startGame = True
+            misc.log('Relaying startGUI Command')
+            for socketObj in socketList:
+                network.sendMessage('startGUI', [None], socketObj)
+            network.removeUsedType('startGUI')
         
     def join(self):
         self.end = True
@@ -616,6 +630,7 @@ def netTypesDeclaration():
     network.addUsedType('gotoQu')
     network.addUsedType('promptMsg')
     network.addUsedType('removeContestant')
+    network.addUsedType('startGUI')
         
 def setup():
     global config
