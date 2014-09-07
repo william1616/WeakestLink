@@ -39,6 +39,7 @@ nosetests.xml
 
 # Log files
 *.log
+log*
 
 # MS Binary Files
 *.xlsx
