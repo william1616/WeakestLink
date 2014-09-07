@@ -40,13 +40,13 @@ def initConfig(fileName='config.json'):
             writeConfig(options, fileName)
             return options
 
-def writeConfig(config, fileName=os.path.join(os.path.dirname(__file__), 'config.json')):
+def writeConfig(config, fileName='config.json'):
     with open(fileName, 'w') as configFile:
         dump(config, configFile, indent=4)
             
 config = initConfig()
 
-def log(text, forceLog=False, fileName=os.path.join(os.path.dirname(__file__), config['debug']['fileName'])):
+def log(text, forceLog=False, fileName=config['debug']['fileName']):
     logName = extract_stack()[0][0]
     if config['debug']['log'] or forceLog:
         with open(fileName, 'a') as file:
