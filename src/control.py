@@ -221,7 +221,7 @@ def initTk(parent):
     voteScore = []
     voteLabel = []
     
-    for i in range(0, 8):
+    for i in range(0, config['questions']['contestantCnt']):
         voteVar.append(StringVar())
         voteScore.append(IntVar())
         voteLabel.append(ttk.Label(voteFrame, textvariable=voteScore[i]))
@@ -301,7 +301,7 @@ def variableUpdates():
         
     if network.messageInBuffer('contestantUpdate'):
         contestantList = network.getMessageofType('contestantUpdate', False)
-        for i in range(0, 8):
+        for i in range(0, config['questions']['contestantCnt']):
             try:
                 voteVar[i].set(contestantList[i].name)
                 voteScore[i].set(contestantList[i].score)
@@ -311,7 +311,7 @@ def variableUpdates():
                 voteLabel[i].grid_forget()
         
     if network.getMessageofType('eliminationWait', False):
-        for i in range(0, 8):
+        for i in range(0, config['questions']['contestantCnt']):
             voteButton[i].config(state='normal')
         
     if network.getMessageofType('finalStart', False):
