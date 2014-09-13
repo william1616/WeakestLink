@@ -551,6 +551,7 @@ def updateContestants():
     contestantTopLevel.withdraw()
     for i, contestantName in zip(range(0, len(questionThread.gameController.contestants)), contestantNameValues):
         questionThread.gameController.contestants[i].name = contestantName.get()
+    sendClientEvent('contestantUpdate', questionThread.gameController.contestants)
     
 def selectMainQuestionFile():
     global config
