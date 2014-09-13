@@ -98,6 +98,7 @@ class gameControllerClass():
         for i in self.contestants:
             i.clrScore()
         sendClientEvent('contestantUpdate', self.contestants)
+        sendClientEvent('rndScoreUpdate', [self.curRndCtrl.moneyCounter, self.curRndCtrl.money, self.bank])
         if config['questions']['sortQuestions'] == True:
             self.questionGenerator = self.getCurRndCtrl().questionGenerator
         self.nextContestant()
