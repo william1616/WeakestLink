@@ -10,12 +10,12 @@ def initConfig(fileName='config.json'):
         try:
             config = load(configFile) #load the json from the config file to a local variable
             if not isinstance(config, dict):
-			    #if the config is not a dictionary overwrite the config file
+                #if the config is not a dictionary overwrite the config file
                 print('ConfigFile is not a Dictionary')
                 raise #break out of the try and go to the first except stmnt by raising a generic error
-            for key, value in options.iteritems(): #for each key and value in options
+            for key, value in options.items(): #for each key and value in options
                 if key in config: #check if the key is in the config file
-				    if isinstance(value, dict): #if the value is a dictionary
+                    if isinstance(value, dict): #if the value is a dictionary
                         for subkey in value: #loop through each subkey in the dictionary
                             if not subkey in config[key]: #if the subkey is not in the config overwrite the config file
                                 print('Cannot find key [' + key + '][' + subkey + '] in ConfigFile')
@@ -24,7 +24,8 @@ def initConfig(fileName='config.json'):
                     print('Cannot find key [' + key + '] in ConfigFile')
                     raise #break out of the try and go to the first except stmnt by raising a generic error
             return config #return the config => this will only happen if no errors have been thrown upto this point
-        except: #an error has been thrown => the config file is invalid => overwrite the config file with the default values to prevent errors in the program
+        except Exception as e: #an error has been thrown => the config file is invalid => overwrite the config file with the default values to prevent errors in the program
+            print(e)
             print('Overwritting config file')
             writeConfig(options, fileName) #write the default options to the config file
             return options #return the default options
@@ -41,6 +42,6 @@ config = initConfig()
 def log(text, forceLog=False, fileName=config['debug']['fileName']):
     logName = extract_stack()[0][0] #get the name of the file calling the log function
     if config['debug']['log'] or forceLog: #if the log is turned on or the function is called with the force argument
-	    #log the text to file
+        #log the text to file
         with open(fileName, 'a') as file: #open the file in append mode create the file if it does not exist
             file.write(str(datetime.now()) + ' [' + logName + '] ' + text + '\n') #write the current date, file calling the function and log message to the end of the file
