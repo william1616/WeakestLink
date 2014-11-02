@@ -2,28 +2,34 @@ from datetime import datetime
 from json import load, dump
 from traceback import extract_stack
 
+#compare two python variables
+#base => any python variable
+#new => variable to compare base against
+#checkDictVals => check if the values of dict variables which are not dict variables themselves match ie only check dict keys but do it recursivley
+def compareVars(base, new, checkDictVals=True):
+  if type(base) != type(new): return False
+  if isinstance(base, dict): #if the base is a dict
+    for (baseKey, baseValue), (newKey, newValue) in zip(sorted(base.items()), sorted(new.items())): #iterate through the key, value pairs in both the base and the new dicts
+      if not compareVars(baseKey, newKey) or not compareVars(baseValue, newValue, checkDictVals): return False #compare the two lists of keys checking the vals then compare the two lists of vals only checking any dict vals if specified by the checkDictVars parameter; if the two variables are not the same return False
+  else: #if the base is not a dict
+    if checkDictVals: #if checking vals
+      return base == new #compare the base and new variables
+    else: #otherwise in not checking vals
+      return True #return that the vals are equal
+  return True #if return false has not yet been executed the two variables must match so return True
+
 #initalise the config
 def initConfig(fileName='config.json'):
   #options list here needs to be kept up to date with config fields; it is the default options list for the application
   options = {"Tk": {"window_title": "The Weakest Link", "status_lines": 25}, "questions": {"mainQ": "resources/questions.csv", "finalQ": "resources/questions.csv", "finalRndQCnt": 10, "sortQuestions": False, "contestantCnt": 8}, "server": {"bindPort": 1024, "bindAddress": "localhost"}, "debug": {"fileName": "log.txt", "log": False}, "pygame": {"font": "microsoftsansserif", "window_title": "The Weakest Link", "fps": 10, "width": 800, "height": 600, "fullscreen": False}}
   with open(fileName, 'r') as configFile: #open the configfile for reading
     try:
-      config = load(configFile) #load the json from the config file to a local variable
-      if not isinstance(config, dict):
-        #if the config is not a dictionary overwrite the config file
-        print('ConfigFile is not a Dictionary')
-        raise #break out of the try and go to the first except stmnt by raising a generic error
-      for key, value in options.items(): #for each key and value in options
-        if key in config: #check if the key is in the config file
-          if isinstance(value, dict): #if the value is a dictionary
-            for subkey in value: #loop through each subkey in the dictionary
-              if not subkey in config[key]: #if the subkey is not in the config overwrite the config file
-                print('Cannot find key [' + key + '][' + subkey + '] in ConfigFile')
-                raise #break out of the try and go to the first except stmnt by raising a generic error
-        else: #if the key is not in the config file overwrite the config file
-          print('Cannot find key [' + key + '] in ConfigFile')
-          raise #break out of the try and go to the first except stmnt by raising a generic error
-      return config #return the config => this will only happen if no errors have been thrown upto this point
+      config = load(configFile) #load the json file into a dict var
+      if not compareVars(options, config, False):
+        #check if all the keys in the default options are present in the config from the config file if they are not overwrite the config file by raising an error and going to the first Except statement
+        raise ValueError("Invalid Config File")
+      else:
+        return config
     except Exception as e: #an error has been thrown => the config file is invalid => overwrite the config file with the default values to prevent errors in the program
       print(e)
       print('Overwritting config file')
